@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:logistics/screens/client/emoji_picker_widget.dart';
 import 'package:logistics/screens/client/message_bubble.dart';
-import 'dart:io';
 import '../../models/chat_models.dart';
 import '../../services/chat_service.dart';
 
