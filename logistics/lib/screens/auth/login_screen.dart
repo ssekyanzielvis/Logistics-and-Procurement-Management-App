@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:logistics/screens/admin/admin_dashboard.dart';
 import 'package:logistics/screens/auth/register_screen.dart';
+import 'package:logistics/screens/client/client_dashboard.dart';
+import 'package:logistics/screens/driver/driver_dashboard.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
@@ -29,18 +32,59 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authService = Provider.of<AuthService>(context, listen: false);
-    final success = await authService.signIn(
-      _emailController.text.trim(),
-      _passwordController.text,
-    );
 
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid credentials. Please try again.'),
-          backgroundColor: AppConstants.errorColor,
-        ),
+    try {
+      final role = await authService.signIn(
+        _emailController.text.trim(),
+        _passwordController.text,
       );
+
+      if (role != null && mounted) {
+        // Navigate based on role
+        switch (role) {
+          case AppConstants.adminRole:
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const AdminDashboard()),
+            );
+            break;
+          case AppConstants.driverRole:
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const DriverDashboard()),
+            );
+            break;
+          case AppConstants.clientRole:
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const ClientDashboard()),
+            );
+            break;
+          default:
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Invalid user role'),
+                backgroundColor: AppConstants.errorColor,
+              ),
+            );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login failed: Invalid credentials'),
+            backgroundColor: AppConstants.errorColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login failed: $e'),
+            backgroundColor: AppConstants.errorColor,
+          ),
+        );
+      }
     }
   }
 

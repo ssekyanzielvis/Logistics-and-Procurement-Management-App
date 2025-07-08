@@ -40,7 +40,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<bool> signIn(String email, String password) async {
+  Future<String?> signIn(String email, String password) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -49,7 +49,7 @@ class AuthService extends ChangeNotifier {
       if (email == AppConstants.adminId &&
           password == AppConstants.adminPassword) {
         await _handleAdminAuthentication();
-        return true;
+        return AppConstants.adminRole; // Return admin role
       }
 
       // Regular user login
@@ -60,12 +60,12 @@ class AuthService extends ChangeNotifier {
 
       if (response.user != null) {
         await _loadUserProfile(response.user!.id);
-        return true;
+        return _currentUser?.role; // Return user role
       }
-      return false;
+      return null;
     } catch (e) {
       print('Sign in error: $e');
-      return false;
+      return null;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -175,7 +175,7 @@ class AuthService extends ChangeNotifier {
         'role': role,
         'is_active': true,
         'created_at': DateTime.now().toIso8601String(),
-        'profile_image': profileImageUrl, // Include profile image URL
+        'profile_image': profileImageUrl,
       };
 
       await _supabase.from('users').insert(userData);
