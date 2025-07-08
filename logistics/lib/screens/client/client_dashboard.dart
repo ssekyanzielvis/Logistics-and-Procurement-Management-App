@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:logistics/screens/client/chat_list_screen.dart';
 import 'package:logistics/screens/client/create_consignment_screen.dart';
 import 'package:logistics/screens/client/my_consignments_screen.dart';
-import 'package:logistics/screens/client/track_consignment_screen.dart';
+import 'package:logistics/screens/client/track_consignment_screen.dart'; // Added import for ChatScreen
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
@@ -32,7 +33,18 @@ class _ClientDashboardState extends State<ClientDashboard> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
+            icon: const Icon(Icons.chat),
+            tooltip: 'Chat',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ChatListScreen()),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
             onPressed: () {
               Provider.of<AuthService>(context, listen: false).signOut();
             },

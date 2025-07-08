@@ -32,7 +32,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
+            icon: const Icon(Icons.chat),
+            tooltip: 'Chats',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ChatListScreen()),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
             onPressed: () {
               Provider.of<AuthService>(context, listen: false).signOut();
             },
@@ -80,7 +91,6 @@ class AdminHomeScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Welcome Card
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -114,18 +124,12 @@ class AdminHomeScreen extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(height: 24),
-
-          // Quick Stats
           const Text(
             'Quick Overview',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-
           const SizedBox(height: 16),
-
-          // Stats Grid
           Expanded(
             child: GridView.count(
               crossAxisCount: 2,
@@ -200,6 +204,22 @@ class AdminHomeScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class ChatListScreen extends StatelessWidget {
+  const ChatListScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Chats'),
+        backgroundColor: AppConstants.primaryColor,
+        foregroundColor: Colors.white,
+      ),
+      body: const Center(child: Text('Chat List Screen - Under Construction')),
     );
   }
 }

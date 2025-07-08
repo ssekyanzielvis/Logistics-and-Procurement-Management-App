@@ -5,9 +5,11 @@ class AppConstants {
   static const String supabaseUrl = 'YOUR_SUPABASE_URL';
   static const String supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
 
-  // Hard-coded Admin Credentials
+  // Admin Credentials
   static const String adminId = '00000001';
-  static const String adminPassword = '12345678';
+  static const String adminEmail =
+      'abdulssekyanzi@gmail.com'; // Added this line
+  static const String adminPassword = 'Su4at3#0';
 
   // App Colors
   static const primaryColor = Color(0xFF2196F3);

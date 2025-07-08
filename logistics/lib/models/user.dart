@@ -6,6 +6,7 @@ class UserModel {
   final String role;
   final bool isActive;
   final DateTime createdAt;
+  final String? profileImage; // Added optional profileImage field
 
   UserModel({
     required this.id,
@@ -15,6 +16,7 @@ class UserModel {
     required this.role,
     required this.isActive,
     required this.createdAt,
+    this.profileImage, // Added to constructor
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class UserModel {
       role: json['role'],
       isActive: json['is_active'] ?? true,
       createdAt: DateTime.parse(json['created_at']),
+      profileImage: json['profile_image'], // Added to fromJson
     );
   }
 
@@ -38,6 +41,7 @@ class UserModel {
       'role': role,
       'is_active': isActive,
       'created_at': createdAt.toIso8601String(),
+      'profile_image': profileImage, // Added to toJson
     };
   }
 }

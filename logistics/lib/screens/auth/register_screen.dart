@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
@@ -17,10 +19,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
+  File? _profileImage; // Store selected image
+  final ImagePicker _picker = ImagePicker();
 
   String _selectedRole = AppConstants.clientRole;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _termsAccepted = false;
 
   @override
   void dispose() {
@@ -32,16 +37,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _handleRegister() async {
-    if (_formKey.currentState!.validate()) {
-      final authService = Provider.of<AuthService>(context, listen: false);
+  // Function to pick image from gallery
+  Future<void> _pickImage() async {
+    try {
+      final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+      if (pickedFile != null && mounted) {
+        setState(() {
+          _profileImage = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick image: $e'),
+            backgroundColor: AppConstants.errorColor,
+          ),
+        );
+      }
+    }
+  }
 
+  Future<void> _handleRegister() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (!_termsAccepted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please accept the terms and conditions'),
+          backgroundColor: AppConstants.errorColor,
+        ),
+      );
+      return;
+    }
+
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    try {
       final success = await authService.signUp(
-        _emailController.text.trim(),
-        _passwordController.text,
-        _fullNameController.text.trim(),
-        _phoneController.text.trim(),
-        _selectedRole,
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        fullName: _fullNameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        role: _selectedRole,
+        profileImage: _profileImage, // Pass the selected image
       );
 
       if (success && mounted) {
@@ -50,13 +88,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SnackBar(
             content: Text('Account created successfully!'),
             backgroundColor: AppConstants.secondaryColor,
+            duration: Duration(seconds: 2),
           ),
         );
-      } else if (mounted) {
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registration failed. Please try again.'),
+          SnackBar(
+            content: Text('Registration failed: ${e.toString()}'),
             backgroundColor: AppConstants.errorColor,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -71,6 +113,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         title: const Text('Create Account'),
         backgroundColor: AppConstants.primaryColor,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -96,15 +139,53 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 children: [
                   const Text(
                     'Register New Account',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppConstants.primaryColor,
+                    ),
                     textAlign: TextAlign.center,
                   ),
 
                   const SizedBox(height: 20),
 
+                  // Profile Image Picker
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: Container(
+                      height: 100,
+                      width: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppConstants.primaryColor,
+                          width: 2,
+                        ),
+                      ),
+                      child:
+                          _profileImage == null
+                              ? const Icon(
+                                Icons.person,
+                                size: 60,
+                                color: AppConstants.primaryColor,
+                              )
+                              : ClipOval(
+                                child: Image.file(
+                                  _profileImage!,
+                                  fit: BoxFit.cover,
+                                  width: 100,
+                                  height: 100,
+                                ),
+                              ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
                   // Full Name Field
                   TextFormField(
                     controller: _fullNameController,
+                    textCapitalization: TextCapitalization.words,
                     decoration: InputDecoration(
                       labelText: 'Full Name',
                       prefixIcon: const Icon(Icons.person),
@@ -117,6 +198,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your full name';
+                      }
+                      if (value.length < 3) {
+                        return 'Name must be at least 3 characters';
                       }
                       return null;
                     },
@@ -141,7 +225,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your email';
                       }
-                      if (!value.contains('@')) {
+                      if (!RegExp(
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(value)) {
                         return 'Please enter a valid email';
                       }
                       return null;
@@ -166,6 +252,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your phone number';
+                      }
+                      if (!RegExp(
+                        r'^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$',
+                      ).hasMatch(value)) {
+                        return 'Please enter a valid phone number';
                       }
                       return null;
                     },
@@ -200,6 +291,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         _selectedRole = value!;
                       });
                     },
+                    validator: (value) {
+                      if (value == null) {
+                        return 'Please select a role';
+                      }
+                      return null;
+                    },
                   ),
 
                   const SizedBox(height: 16),
@@ -233,8 +330,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       if (value == null || value.isEmpty) {
                         return 'Please enter a password';
                       }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
+                      if (value.length < 8) {
+                        return 'Password must be at least 8 characters';
+                      }
+                      if (!RegExp(
+                        r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9]).{8,}$',
+                      ).hasMatch(value)) {
+                        return 'Password must contain uppercase, lowercase and numbers';
                       }
                       return null;
                     },
@@ -278,6 +380,53 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                   ),
 
+                  const SizedBox(height: 16),
+
+                  // Terms and Conditions
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _termsAccepted,
+                        onChanged: (value) {
+                          setState(() {
+                            _termsAccepted = value!;
+                          });
+                        },
+                        activeColor: AppConstants.primaryColor,
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder:
+                                  (context) => AlertDialog(
+                                    title: const Text('Terms and Conditions'),
+                                    content: const SingleChildScrollView(
+                                      child: Text(
+                                        'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text('Close'),
+                                      ),
+                                    ],
+                                  ),
+                            );
+                          },
+                          child: const Text(
+                            'I agree to the terms and conditions',
+                            style: TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
                   const SizedBox(height: 24),
 
                   // Register Button
@@ -292,6 +441,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
+                          elevation: 0,
                         ),
                         child:
                             authService.isLoading
@@ -317,9 +467,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    child: const Text(
-                      'Already have an account? Sign In',
-                      style: TextStyle(color: AppConstants.primaryColor),
+                    child: RichText(
+                      text: const TextSpan(
+                        text: 'Already have an account? ',
+                        style: TextStyle(color: Colors.grey),
+                        children: [
+                          TextSpan(
+                            text: 'Sign In',
+                            style: TextStyle(
+                              color: AppConstants.primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

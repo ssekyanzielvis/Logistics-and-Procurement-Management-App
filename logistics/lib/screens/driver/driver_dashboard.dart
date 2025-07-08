@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logistics/screens/driver/available_consignments_screen.dart';
-import 'package:logistics/screens/driver/my_deliveries_screen.dart';
+import 'package:logistics/screens/driver/my_deliveries_screen.dart'; // Add this import
+import 'package:logistics/screens/client/chat_list_screen.dart'; // Add this import
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
@@ -152,6 +153,33 @@ class DriverHomeScreen extends StatelessWidget {
                   Colors.purple,
                 ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Chat Button
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ChatListScreen()),
+                );
+              },
+              icon: const Icon(Icons.chat),
+              label: const Text('Messages'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppConstants.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
             ),
           ),
         ],

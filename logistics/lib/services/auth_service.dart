@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logistics/models/user.dart';
 import 'package:logistics/utils/constants.dart';
@@ -47,11 +48,11 @@ class AuthService extends ChangeNotifier {
       // Check for hard-coded admin credentials
       if (email == AppConstants.adminId &&
           password == AppConstants.adminPassword) {
-        // Create admin user if not exists
-        await _createOrGetAdminUser();
+        await _handleAdminAuthentication();
         return true;
       }
 
+      // Regular user login
       final response = await _supabase.auth.signInWithPassword(
         email: email,
         password: password,
@@ -71,9 +72,32 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<void> _handleAdminAuthentication() async {
+    try {
+      // First check if admin exists in auth table
+      try {
+        await _supabase.auth.signInWithPassword(
+          email: AppConstants.adminId,
+          password: AppConstants.adminPassword,
+        );
+      } catch (authError) {
+        // If auth fails, create admin user in auth system
+        await _supabase.auth.signUp(
+          email: AppConstants.adminId,
+          password: AppConstants.adminPassword,
+        );
+      }
+
+      // Then ensure admin profile exists
+      await _createOrGetAdminUser();
+    } catch (e) {
+      print('Admin authentication error: $e');
+      rethrow;
+    }
+  }
+
   Future<void> _createOrGetAdminUser() async {
     try {
-      // Check if admin user exists
       final existingAdmin =
           await _supabase
               .from('users')
@@ -82,7 +106,6 @@ class AuthService extends ChangeNotifier {
               .maybeSingle();
 
       if (existingAdmin == null) {
-        // Create admin user
         final adminData = {
           'id': 'admin-${DateTime.now().millisecondsSinceEpoch}',
           'email': AppConstants.adminId,
@@ -101,45 +124,66 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       print('Error creating admin user: $e');
+      rethrow;
     }
   }
 
-  Future<bool> signUp(
-    String email,
-    String password,
-    String fullName,
-    String phone,
-    String role,
-  ) async {
+  Future<bool> signUp({
+    required String email,
+    required String password,
+    required String fullName,
+    required String phone,
+    required String role,
+    File? profileImage,
+  }) async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      final response = await _supabase.auth.signUp(
+      // Create auth user
+      final authResponse = await _supabase.auth.signUp(
         email: email,
         password: password,
       );
 
-      if (response.user != null) {
-        // Create user profile
-        final userData = {
-          'id': response.user!.id,
-          'email': email,
-          'full_name': fullName,
-          'phone': phone,
-          'role': role,
-          'is_active': true,
-          'created_at': DateTime.now().toIso8601String(),
-        };
-
-        await _supabase.from('users').insert(userData);
-        _currentUser = UserModel.fromJson(userData);
-        return true;
+      if (authResponse.user == null) {
+        throw Exception('User creation failed');
       }
-      return false;
+
+      String? profileImageUrl;
+
+      // Upload profile image to Supabase Storage if provided
+      if (profileImage != null) {
+        final fileName =
+            '${authResponse.user!.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        await _supabase.storage
+            .from('profile_images')
+            .upload(fileName, profileImage);
+
+        // Get the public URL of the uploaded image
+        profileImageUrl = _supabase.storage
+            .from('profile_images')
+            .getPublicUrl(fileName);
+      }
+
+      // Create user profile
+      final userData = {
+        'id': authResponse.user!.id,
+        'email': email,
+        'full_name': fullName,
+        'phone': phone,
+        'role': role,
+        'is_active': true,
+        'created_at': DateTime.now().toIso8601String(),
+        'profile_image': profileImageUrl, // Include profile image URL
+      };
+
+      await _supabase.from('users').insert(userData);
+      _currentUser = UserModel.fromJson(userData);
+      return true;
     } catch (e) {
       print('Sign up error: $e');
-      return false;
+      throw Exception('Sign up error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

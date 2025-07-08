@@ -16,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isAdminLogin = false;
 
   @override
   void dispose() {
@@ -25,23 +26,30 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
-      final authService = Provider.of<AuthService>(context, listen: false);
+    if (!_formKey.currentState!.validate()) return;
 
-      final success = await authService.signIn(
-        _emailController.text.trim(),
-        _passwordController.text,
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final success = await authService.signIn(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
+
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid credentials. Please try again.'),
+          backgroundColor: AppConstants.errorColor,
+        ),
       );
-
-      if (!success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid credentials. Please try again.'),
-            backgroundColor: AppConstants.errorColor,
-          ),
-        );
-      }
     }
+  }
+
+  void _fillAdminCredentials() {
+    setState(() {
+      _emailController.text = AppConstants.adminEmail;
+      _passwordController.text = AppConstants.adminPassword;
+      _isAdminLogin = true;
+    });
   }
 
   @override
@@ -54,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 60),
+              const SizedBox(height: 40),
 
               // Logo and Title
               Container(
@@ -74,10 +82,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
-                    ),
-                    Text(
-                      'Real-time Delivery Tracking',
-                      style: TextStyle(fontSize: 16, color: Colors.white70),
                     ),
                   ],
                 ),
@@ -116,12 +120,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       const SizedBox(height: 20),
 
-                      // Email/ID Field
+                      // Email Field
                       TextFormField(
                         controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
                         decoration: InputDecoration(
-                          labelText: 'Email or ID',
-                          prefixIcon: const Icon(Icons.person),
+                          labelText: 'Email',
+                          prefixIcon: const Icon(Icons.email),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -130,7 +135,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter your email or ID';
+                            return 'Please enter your email';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Please enter a valid email';
                           }
                           return null;
                         },
@@ -167,9 +175,25 @@ class _LoginScreenState extends State<LoginScreen> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your password';
                           }
+                          if (value.length < 6) {
+                            return 'Password must be at least 6 characters';
+                          }
                           return null;
                         },
                       ),
+
+                      if (_isAdminLogin)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            'Using admin credentials',
+                            style: TextStyle(
+                              color: AppConstants.primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
 
                       const SizedBox(height: 24),
 
@@ -206,52 +230,36 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 16),
 
                       // Register Link
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const RegisterScreen(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const RegisterScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Create account',
+                              style: TextStyle(
+                                color: AppConstants.primaryColor,
+                              ),
                             ),
-                          );
-                        },
-                        child: const Text(
-                          'Don\'t have an account? Register here',
-                          style: TextStyle(color: AppConstants.primaryColor),
-                        ),
+                          ),
+                          TextButton(
+                            onPressed: _fillAdminCredentials,
+                            child: const Text(
+                              'Admin Login',
+                              style: TextStyle(color: Colors.orange),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              // Admin Login Info
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.orange[50],
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.orange[200]!),
-                ),
-                child: const Column(
-                  children: [
-                    Icon(Icons.admin_panel_settings, color: Colors.orange),
-                    SizedBox(height: 8),
-                    Text(
-                      'Admin Login',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange,
-                      ),
-                    ),
-                    Text(
-                      'ID: 00000001\nPassword: 12345678',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: Colors.orange),
-                    ),
-                  ],
                 ),
               ),
             ],

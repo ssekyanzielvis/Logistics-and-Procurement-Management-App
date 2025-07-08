@@ -194,9 +194,7 @@ class LocationService extends ChangeNotifier {
           'heading': position.heading,
           'speed': position.speed,
           'altitude': position.altitude,
-          'timestamp':
-              position.timestamp?.toIso8601String() ??
-              DateTime.now().toIso8601String(),
+          'timestamp': position.timestamp.toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
         });
 
