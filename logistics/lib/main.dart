@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:logistics/screens/admin/admin_dashboard.dart';
-import 'package:logistics/screens/auth/login_screen.dart';
+import 'package:logistics/screens/admin/admin_login_page.dart';
+import 'package:logistics/screens/admin/other_admin_login_page.dart';
+import 'package:logistics/screens/admin/admin_register_page.dart'; // Add this import
+import 'package:logistics/screens/admin/other_admin_register_page.dart';
 import 'package:logistics/screens/client/client_dashboard.dart';
 import 'package:logistics/screens/driver/driver_dashboard.dart';
+import 'package:logistics/screens/home/client_login_page.dart';
+import 'package:logistics/screens/home/home_page.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/services/location_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -41,6 +46,14 @@ class LogisticsApp extends StatelessWidget {
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
         home: const AuthWrapper(),
+        routes: {
+          '/login': (context) => const LoginPage(),
+          '/admin-login': (context) => const AdminLoginPage(),
+          '/other-admin-login': (context) => const OtherAdminLoginPage(),
+          '/admin-register': (context) => const AdminRegisterPage(),
+          '/other-admin-register':
+              (context) => const OtherAdminRegisterPage(), // Add this route
+        },
         debugShowCheckedModeBanner: false,
       ),
     );
@@ -61,7 +74,7 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (authService.currentUser == null) {
-          return const LoginScreen();
+          return const HomePage();
         }
 
         // Route based on user role
@@ -73,7 +86,7 @@ class AuthWrapper extends StatelessWidget {
           case 'driver':
             return const DriverDashboard();
           default:
-            return const LoginScreen();
+            return const HomePage();
         }
       },
     );
