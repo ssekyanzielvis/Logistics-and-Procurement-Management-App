@@ -81,7 +81,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
               const SizedBox(width: 12),
               const Text(
-                'MyApp',
+                'LOGISTICS',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,

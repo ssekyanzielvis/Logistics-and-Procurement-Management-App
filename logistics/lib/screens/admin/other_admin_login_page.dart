@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:logistics/services/auth_service.dart';
+import 'package:provider/provider.dart';
+import 'other_admin_dashboard.dart';
 
 class OtherAdminLoginPage extends StatefulWidget {
   const OtherAdminLoginPage({Key? key}) : super(key: key);
@@ -16,7 +18,6 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
 
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
-  bool _isLoading = false;
   bool _isDarkMode = false;
   bool _capsLockOn = false;
 
@@ -61,7 +62,6 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
   }
 
   void _checkCapsLock(String value) {
-    // Simple caps lock detection
     bool hasCaps =
         value.isNotEmpty &&
         value == value.toUpperCase() &&
@@ -76,25 +76,52 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    // Check hardcoded credentials
+    const String allowedEmail = "abdulssekyanzi@gmail.com";
+    const String allowedPassword = "Su4at3#0";
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // Simulate API call
+      await Future.delayed(const Duration(seconds: 1));
 
-    setState(() {
-      _isLoading = false;
-    });
+      if (!mounted) return;
 
-    // Handle successful login or show error
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Login successful!'),
-        backgroundColor: _isDarkMode ? Colors.green[700] : Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      if (_emailController.text.trim() == allowedEmail &&
+          _passwordController.text == allowedPassword) {
+        // Navigate to OtherAdminDashboard for valid credentials
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const OtherAdminDashboard()),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Login successful as admin'),
+            backgroundColor: _isDarkMode ? Colors.green[700] : Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        // Show error for invalid credentials
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Invalid email or password'),
+            backgroundColor: _isDarkMode ? Colors.red[700] : Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login failed: ${e.toString()}'),
+            backgroundColor: _isDarkMode ? Colors.red[700] : Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _handleForgotPassword() {
@@ -112,7 +139,40 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () async {
+                  final authService = Provider.of<AuthService>(
+                    context,
+                    listen: false,
+                  );
+                  try {
+                    await authService.resetPassword(
+                      _emailController.text.trim(),
+                    );
+                    if (mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Password reset link sent!'),
+                          backgroundColor:
+                              _isDarkMode ? Colors.green[700] : Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error: ${e.toString()}'),
+                          backgroundColor:
+                              _isDarkMode ? Colors.red[700] : Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
+                },
                 child: const Text('Send Link'),
               ),
             ],
@@ -124,6 +184,7 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
   Widget build(BuildContext context) {
     final theme = _isDarkMode ? ThemeData.dark() : ThemeData.light();
     final colorScheme = theme.colorScheme;
+    final authService = Provider.of<AuthService>(context);
 
     return Theme(
       data: theme,
@@ -145,7 +206,7 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
                       shadowColor:
                           _isDarkMode
                               ? Colors.black54
-                              : Colors.grey.withOpacity(0.3),
+                              : Colors.grey.withValues(alpha: 0.3),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -158,7 +219,7 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
                             const SizedBox(height: 32),
                             _buildLoginForm(),
                             const SizedBox(height: 24),
-                            _buildLoginButton(),
+                            _buildLoginButton(authService.isLoading),
                             const SizedBox(height: 16),
                             _buildForgotPassword(),
                             const SizedBox(height: 24),
@@ -261,7 +322,9 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor:
-            _isDarkMode ? Colors.grey[800]?.withOpacity(0.3) : Colors.grey[50],
+            _isDarkMode
+                ? Colors.grey[800]?.withValues(alpha: 0.3)
+                : Colors.grey[50],
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -298,7 +361,9 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor:
-            _isDarkMode ? Colors.grey[800]?.withOpacity(0.3) : Colors.grey[50],
+            _isDarkMode
+                ? Colors.grey[800]?.withValues(alpha: 0.3)
+                : Colors.grey[50],
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -356,12 +421,12 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
     );
   }
 
-  Widget _buildLoginButton() {
+  Widget _buildLoginButton(bool isLoading) {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _handleLogin,
+        onPressed: isLoading ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
           backgroundColor: _isDarkMode ? Colors.blue[600] : Colors.blue[700],
           foregroundColor: Colors.white,
@@ -371,7 +436,7 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
           elevation: 2,
         ),
         child:
-            _isLoading
+            isLoading
                 ? const SizedBox(
                   width: 20,
                   height: 20,
@@ -477,7 +542,7 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
       decoration: BoxDecoration(
         color:
             _isDarkMode
-                ? Colors.green[800]?.withOpacity(0.2)
+                ? Colors.green[800]?.withValues(alpha: 0.2)
                 : Colors.green[50],
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
@@ -507,23 +572,17 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
   }
 
   void _handleSocialLogin(String provider) {
-    setState(() {
-      _isLoading = true;
-    });
-
     // Simulate social login
     Future.delayed(const Duration(seconds: 1), () {
-      setState(() {
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$provider login initiated'),
-          backgroundColor: _isDarkMode ? Colors.blue[700] : Colors.blue,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$provider login initiated'),
+            backgroundColor: _isDarkMode ? Colors.blue[700] : Colors.blue,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     });
   }
 }

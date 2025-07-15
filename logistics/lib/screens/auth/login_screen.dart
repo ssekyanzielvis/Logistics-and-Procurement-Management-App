@@ -90,8 +90,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _fillAdminCredentials() {
     setState(() {
-      _emailController.text = AppConstants.adminEmail;
-      _passwordController.text = AppConstants.adminPassword;
+      _emailController.text = 'admin@logistics.com';
+      _passwordController.text = 'admin123';
       _isAdminLogin = true;
     });
   }

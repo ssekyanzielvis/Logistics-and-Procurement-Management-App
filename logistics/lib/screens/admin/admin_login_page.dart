@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logistics/screens/admin/admin_dashboard.dart';
 import 'package:logistics/services/auth_service.dart';
-import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({super.key});
@@ -15,12 +15,10 @@ class _AdminLoginPageState extends State<AdminLoginPage>
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
   bool _isPasswordVisible = false;
   bool _isLoading = false;
   bool _rememberMe = false;
   String? _errorMessage;
-
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -32,18 +30,15 @@ class _AdminLoginPageState extends State<AdminLoginPage>
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
-
     _animationController.forward();
   }
 
@@ -58,54 +53,64 @@ class _AdminLoginPageState extends State<AdminLoginPage>
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final role = await authService.signIn(
-        _emailController.text,
-        _passwordController.text,
-      );
-
-      if (role == null) {
-        throw Exception('Authentication failed: No user found');
+      // Bypass authentication for specific credentials
+      if (email == 'abdulssekyanzi@gmail.com' && password == 'Su4at3#0') {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const AdminDashboard()),
+          );
+        }
+        return;
       }
 
-      if (role != 'admin' && role != 'other_admin') {
-        await authService.signOut();
-        throw Exception('Access denied: Only admins can log in here');
-      }
+      // Regular authentication with AuthService
+      final authService = AuthService();
+      final userRole = await authService.signIn(email, password);
 
-      if (mounted) {
+      if (userRole == 'admin' && mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const AdminDashboard()),
         );
+      } else {
+        throw Exception('Login failed: Invalid credentials or not an admin');
       }
     } on AuthException catch (e) {
       setState(() {
-        _errorMessage =
-            e.message == 'Invalid login credentials'
-                ? 'Invalid email or password. Please try again.'
-                : 'Authentication error: ${e.message}';
+        if (e.message.contains('Invalid login credentials') ||
+            e.message.contains('Email not confirmed')) {
+          _errorMessage = 'Invalid email or password. Please try again.';
+        } else {
+          _errorMessage = 'Authentication error: ${e.message}';
+        }
       });
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _handleForgotPassword() async {
     final email = _emailController.text.trim();
     if (email.isEmpty ||
-        !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+        !RegExp(
+          r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+        ).hasMatch(email)) {
       setState(() {
         _errorMessage = 'Please enter a valid email address';
       });
@@ -113,12 +118,19 @@ class _AdminLoginPageState extends State<AdminLoginPage>
     }
 
     try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      await authService.resetPassword(email);
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reset link sent to your email')),
+          const SnackBar(
+            content: Text('Password reset link sent to your email'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
+        setState(() {
+          _errorMessage = null;
+        });
       }
     } catch (e) {
       setState(() {
@@ -129,6 +141,41 @@ class _AdminLoginPageState extends State<AdminLoginPage>
 
   void _handleRegister() {
     Navigator.pushNamed(context, '/admin-register');
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your email address';
+    }
+
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+    if (!emailRegex.hasMatch(value.trim())) {
+      return 'Please enter a valid email address';
+    }
+
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your password';
+    }
+
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+
+    return null;
+  }
+
+  void _clearError() {
+    if (_errorMessage != null) {
+      setState(() {
+        _errorMessage = null;
+      });
+    }
   }
 
   @override
@@ -147,7 +194,7 @@ class _AdminLoginPageState extends State<AdminLoginPage>
                   constraints: const BoxConstraints(maxWidth: 400),
                   child: Card(
                     elevation: 8,
-                    shadowColor: Colors.black.withOpacity(0.1),
+                    shadowColor: Colors.black.withValues(alpha: 0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -206,7 +253,7 @@ class _AdminLoginPageState extends State<AdminLoginPage>
         ),
         const SizedBox(height: 16),
         const Text(
-          'Admin Portal',
+          'System Administrator',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
@@ -242,6 +289,8 @@ class _AdminLoginPageState extends State<AdminLoginPage>
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
       textInputAction: TextInputAction.next,
+      autocorrect: false,
+      enableSuggestions: false,
       decoration: InputDecoration(
         labelText: 'Email Address',
         hintText: 'admin@example.com',
@@ -255,18 +304,19 @@ class _AdminLoginPageState extends State<AdminLoginPage>
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFF667EEA), width: 2),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
         filled: true,
         fillColor: Colors.grey[50],
       ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter your email address';
-        }
-        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-          return 'Please enter a valid email address';
-        }
-        return null;
-      },
+      validator: _validateEmail,
+      onChanged: (value) => _clearError(),
     );
   }
 
@@ -299,18 +349,19 @@ class _AdminLoginPageState extends State<AdminLoginPage>
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFF667EEA), width: 2),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+        ),
         filled: true,
         fillColor: Colors.grey[50],
       ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter your password';
-        }
-        if (value.length < 6) {
-          return 'Password must be at least 6 characters';
-        }
-        return null;
-      },
+      validator: _validatePassword,
+      onChanged: (value) => _clearError(),
     );
   }
 
@@ -344,6 +395,7 @@ class _AdminLoginPageState extends State<AdminLoginPage>
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 2,
+          disabledBackgroundColor: Colors.grey[300],
         ),
         child:
             _isLoading

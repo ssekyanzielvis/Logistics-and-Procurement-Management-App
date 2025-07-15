@@ -4,6 +4,7 @@ import 'package:logistics/screens/admin/admin_login_page.dart';
 import 'package:logistics/screens/admin/other_admin_login_page.dart';
 import 'package:logistics/screens/admin/admin_register_page.dart'; // Add this import
 import 'package:logistics/screens/admin/other_admin_register_page.dart';
+import 'package:logistics/screens/auth/register_screen.dart';
 import 'package:logistics/screens/client/client_dashboard.dart';
 import 'package:logistics/screens/driver/driver_dashboard.dart';
 import 'package:logistics/screens/home/client_login_page.dart';
@@ -48,6 +49,7 @@ class LogisticsApp extends StatelessWidget {
         home: const AuthWrapper(),
         routes: {
           '/login': (context) => const LoginPage(),
+          '/client-or-driver-register': (context) => const RegisterScreen(),
           '/admin-login': (context) => const AdminLoginPage(),
           '/other-admin-login': (context) => const OtherAdminLoginPage(),
           '/admin-register': (context) => const AdminRegisterPage(),

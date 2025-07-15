@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:logistics/screens/client/chat_list_screen.dart';
 import 'package:logistics/screens/client/create_consignment_screen.dart';
 import 'package:logistics/screens/client/my_consignments_screen.dart';
-import 'package:logistics/screens/client/track_consignment_screen.dart'; // Added import for ChatScreen
+import 'package:logistics/screens/client/track_consignment_screen.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
@@ -99,7 +99,7 @@ class ClientHomeScreen extends StatelessWidget {
               gradient: LinearGradient(
                 colors: [
                   AppConstants.primaryColor,
-                  AppConstants.primaryColor.withOpacity(0.7),
+                  AppConstants.primaryColor.withValues(alpha: 0.7),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -110,7 +110,7 @@ class ClientHomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Welcome, ${user?.fullName ?? 'Client'}',
+                  'Welcome, ${user?.email ?? 'Client'}',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -198,7 +198,7 @@ class ClientHomeScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               spreadRadius: 1,
               blurRadius: 5,
               offset: const Offset(0, 3),

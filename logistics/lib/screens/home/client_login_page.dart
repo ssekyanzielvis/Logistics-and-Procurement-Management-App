@@ -80,26 +80,41 @@ class _LoginPageState extends State<LoginPage>
         _isLoading = false;
       });
 
-      // Navigate to appropriate dashboard based on selected role
-      if (_selectedRole == 'Client') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ClientDashboard()),
+      // Check credentials
+      const String allowedEmail = "abdulssekyanzi@gmail.com";
+      const String allowedPassword = "Su4at3#0";
+
+      if (_emailController.text == allowedEmail &&
+          _passwordController.text == allowedPassword) {
+        // Navigate to appropriate dashboard based on selected role
+        if (_selectedRole == 'Client') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const ClientDashboard()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const DriverDashboard()),
+          );
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Login successful as $_selectedRole'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const DriverDashboard()),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid email or password'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Login successful as $_selectedRole'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     }
   }
 

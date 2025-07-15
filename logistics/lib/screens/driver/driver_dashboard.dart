@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logistics/screens/driver/available_consignments_screen.dart';
-import 'package:logistics/screens/driver/my_deliveries_screen.dart'; // Add this import
-import 'package:logistics/screens/client/chat_list_screen.dart'; // Add this import
+import 'package:logistics/screens/driver/my_deliveries_screen.dart';
+import 'package:logistics/screens/client/chat_list_screen.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
@@ -84,7 +84,7 @@ class DriverHomeScreen extends StatelessWidget {
               gradient: LinearGradient(
                 colors: [
                   AppConstants.primaryColor,
-                  AppConstants.primaryColor.withOpacity(0.7),
+                  AppConstants.primaryColor.withValues(alpha: 0.7),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -95,7 +95,7 @@ class DriverHomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Welcome, ${user?.fullName ?? 'Driver'}',
+                  'Welcome, ${user?.userMetadata?['full_name'] ?? 'Driver'}',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -200,7 +200,7 @@ class DriverHomeScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 3),

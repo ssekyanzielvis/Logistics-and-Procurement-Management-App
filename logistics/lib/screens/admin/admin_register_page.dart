@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logistics/screens/admin/admin_dashboard.dart';
 import 'package:logistics/services/auth_service.dart';
-import 'package:provider/provider.dart';
+import 'dart:io';
+import 'package:path/path.dart' as path;
 
 class AdminRegisterPage extends StatefulWidget {
-  const AdminRegisterPage({Key? key}) : super(key: key);
+  const AdminRegisterPage({super.key});
 
   @override
   State<AdminRegisterPage> createState() => _AdminRegisterPageState();
@@ -25,9 +25,11 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
   bool _isLoading = false;
-  File? _profileImage;
+  XFile? _profileImage;
 
   final ImagePicker _picker = ImagePicker();
+  final SupabaseClient _supabase = Supabase.instance.client;
+  final AuthService _authService = AuthService();
 
   // Color scheme
   static const Color primaryColor = Color(0xFF2563EB);
@@ -56,64 +58,50 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
         imageQuality: 80,
       );
 
-      if (image != null) {
+      if (image != null && mounted) {
         setState(() {
-          _profileImage = File(image.path);
+          _profileImage = image;
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error picking image: $e'),
-          backgroundColor: errorColor,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking image: $e'),
+            backgroundColor: errorColor,
+          ),
+        );
+      }
     }
   }
 
-  String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Email is required';
-    }
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) {
-      return 'Please enter a valid email';
-    }
-    return null;
-  }
+  Future<String?> _uploadProfileImage() async {
+    if (_profileImage == null) return null;
 
-  String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Password is required';
-    }
-    if (value.length < 8) {
-      return 'Password must be at least 8 characters';
-    }
-    if (!RegExp(r'^(?=.*[a-zA-Z])(?=.*\d)').hasMatch(value)) {
-      return 'Password must contain letters and numbers';
-    }
-    return null;
-  }
+    try {
+      final fileExtension = path.extension(_profileImage!.path);
+      final fileName =
+          'admin_${DateTime.now().millisecondsSinceEpoch}$fileExtension';
+      final file = File(_profileImage!.path);
 
-  String? _validateConfirmPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please confirm your password';
-    }
-    if (value != _passwordController.text) {
-      return 'Passwords do not match';
-    }
-    return null;
-  }
+      await _supabase.storage
+          .from('admin-profile-images')
+          .upload(
+            fileName,
+            file,
+            fileOptions: FileOptions(
+              contentType: 'image/${fileExtension.replaceAll('.', '')}',
+              upsert: false,
+            ),
+          );
 
-  String? _validatePhone(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Phone number is required';
+      return _supabase.storage
+          .from('admin-profile-images')
+          .getPublicUrl(fileName);
+    } catch (e) {
+      debugPrint('Profile image upload failed: $e');
+      throw Exception('Profile image upload failed. Please try another image.');
     }
-    final phoneRegex = RegExp(r'^\+?[\d\s\-\(\)]{10,}$');
-    if (!phoneRegex.hasMatch(value)) {
-      return 'Please enter a valid phone number';
-    }
-    return null;
   }
 
   Future<void> _createAccount() async {
@@ -122,12 +110,14 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
     }
 
     if (!_agreeToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please agree to the Terms and Conditions'),
-          backgroundColor: errorColor,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please agree to the Terms and Conditions'),
+            backgroundColor: errorColor,
+          ),
+        );
+      }
       return;
     }
 
@@ -136,38 +126,78 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
     });
 
     try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final success = await authService.signUp(
-        email: _emailController.text,
-        password: _passwordController.text,
-        fullName: _nameController.text,
-        phone: _phoneController.text,
+      String? profileImageUrl;
+
+      // Upload profile image first if selected
+      if (_profileImage != null) {
+        profileImageUrl = await _uploadProfileImage();
+      }
+
+      final response = await _authService.signUp(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+        fullName: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
         role: 'admin',
-        profileImage: _profileImage,
+        profileImage: profileImageUrl,
       );
 
-      if (success && mounted) {
+      if (response.user != null) {
+        // Login the admin after successful registration
+        final loginRole = await _authService.signIn(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        );
+
+        if (loginRole != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Admin account created successfully!'),
+              backgroundColor: successColor,
+            ),
+          );
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const AdminDashboard()),
+          );
+        } else {
+          throw Exception('Login failed after registration');
+        }
+      } else {
+        throw Exception('Failed to create admin account');
+      }
+    } on AuthRetryableFetchException catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account created successfully!'),
-            backgroundColor: successColor,
+          SnackBar(
+            content: Text('Server error, please try again: ${e.message}'),
+            backgroundColor: errorColor,
           ),
         );
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const AdminDashboard()),
+      }
+    } on PostgrestException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Database error: ${e.message}'),
+            backgroundColor: errorColor,
+          ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Registration failed: $e'),
-          backgroundColor: errorColor,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Registration failed: ${e.toString()}'),
+            backgroundColor: errorColor,
+          ),
+        );
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -200,7 +230,7 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
               constraints: const BoxConstraints(maxWidth: 400),
               child: Card(
                 elevation: 8,
-                shadowColor: Colors.black.withOpacity(0.1),
+                shadowColor: Colors.black.withValues(alpha: 0.1),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -248,7 +278,7 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
                                   _profileImage != null
                                       ? ClipOval(
                                         child: Image.file(
-                                          _profileImage!,
+                                          File(_profileImage!.path),
                                           fit: BoxFit.cover,
                                         ),
                                       )
@@ -296,7 +326,17 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
                           label: 'Email Address',
                           icon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
-                          validator: _validateEmail,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Email is required';
+                            }
+                            if (!RegExp(
+                              r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                            ).hasMatch(value)) {
+                              return 'Enter a valid email';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 16),
 
@@ -306,7 +346,17 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
                           label: 'Phone Number',
                           icon: Icons.phone_outlined,
                           keyboardType: TextInputType.phone,
-                          validator: _validatePhone,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Phone is required';
+                            }
+                            if (!RegExp(
+                              r'^\+?[\d\s\-\(\)]{10,}$',
+                            ).hasMatch(value)) {
+                              return 'Enter a valid phone number';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 16),
 
@@ -316,7 +366,20 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
                           label: 'Password',
                           icon: Icons.lock_outline,
                           obscureText: _obscurePassword,
-                          validator: _validatePassword,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Password is required';
+                            }
+                            if (value.length < 8) {
+                              return 'Minimum 8 characters';
+                            }
+                            if (!RegExp(
+                              r'^(?=.*[a-zA-Z])(?=.*\d)',
+                            ).hasMatch(value)) {
+                              return 'Letters and numbers required';
+                            }
+                            return null;
+                          },
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
@@ -344,7 +407,15 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
                           label: 'Confirm Password',
                           icon: Icons.lock_outline,
                           obscureText: _obscureConfirmPassword,
-                          validator: _validateConfirmPassword,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please confirm password';
+                            }
+                            if (value != _passwordController.text) {
+                              return 'Passwords do not match';
+                            }
+                            return null;
+                          },
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscureConfirmPassword
@@ -385,25 +456,13 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
                                     _agreeToTerms = !_agreeToTerms;
                                   });
                                 },
-                                child: Padding(
-                                  padding: const EdgeInsets.only(top: 12),
-                                  child: RichText(
-                                    text: const TextSpan(
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: secondaryColor,
-                                      ),
-                                      children: [
-                                        TextSpan(text: 'I agree to the '),
-                                        TextSpan(
-                                          text: 'Terms and Conditions',
-                                          style: TextStyle(
-                                            color: primaryColor,
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                        ),
-                                      ],
+                                child: const Padding(
+                                  padding: EdgeInsets.only(top: 12),
+                                  child: Text(
+                                    'I agree to the Terms and Conditions',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: secondaryColor,
                                     ),
                                   ),
                                 ),
@@ -453,23 +512,12 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
                             onTap: () {
                               Navigator.pushNamed(context, '/admin-login');
                             },
-                            child: RichText(
-                              text: const TextSpan(
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: secondaryColor,
-                                ),
-                                children: [
-                                  TextSpan(text: 'Already have an account? '),
-                                  TextSpan(
-                                    text: 'Sign In',
-                                    style: TextStyle(
-                                      color: primaryColor,
-                                      fontWeight: FontWeight.w600,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                  ),
-                                ],
+                            child: const Text(
+                              'Already have an account? Sign In',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: primaryColor,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),

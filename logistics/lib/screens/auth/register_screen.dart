@@ -73,16 +73,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
 
     try {
-      final success = await authService.signUp(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+      final response = await authService.signUp(
+        _emailController.text.trim(),
+        _passwordController.text,
         fullName: _fullNameController.text.trim(),
         phone: _phoneController.text.trim(),
         role: _selectedRole,
-        profileImage: _profileImage, // Pass the selected image
+        profileImage: _profileImage?.path, // Pass the image path as string
       );
 
-      if (success && mounted) {
+      if (response.user != null && mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -125,7 +125,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               borderRadius: BorderRadius.circular(15),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   spreadRadius: 1,
                   blurRadius: 10,
                   offset: const Offset(0, 3),

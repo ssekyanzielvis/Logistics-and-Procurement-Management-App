@@ -75,7 +75,9 @@ class MessageBubble extends StatelessWidget {
       child:
           message.sender?.profileImg == null
               ? Text(
-                message.sender?.fullName.substring(0, 1).toUpperCase() ?? 'U',
+                message.sender?.fullName.isNotEmpty ?? false
+                    ? message.sender!.fullName.substring(0, 1).toUpperCase()
+                    : 'U',
                 style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
               )
               : null,

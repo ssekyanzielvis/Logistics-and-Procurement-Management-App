@@ -8,18 +8,18 @@ import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+class OtherAdminDashboard extends StatefulWidget {
+  const OtherAdminDashboard({super.key});
 
   @override
-  State<AdminDashboard> createState() => _AdminDashboardState();
+  State<OtherAdminDashboard> createState() => _OtherAdminDashboardState();
 }
 
-class _AdminDashboardState extends State<AdminDashboard> {
+class _OtherAdminDashboardState extends State<OtherAdminDashboard> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
-    AdminHomeScreen(),
+    OtherAdminHomeScreen(),
     const ManageUsersScreen(),
     const ManageConsignmentsScreen(),
     const AnalyticsScreen(),
@@ -35,7 +35,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
+        title: const Text('Board Members Dashboard'),
         backgroundColor: AppConstants.primaryColor,
         foregroundColor: Colors.white,
         toolbarHeight: toolbarHeight, // Reduced to save vertical space
@@ -95,8 +95,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 }
 
-class AdminHomeScreen extends StatelessWidget {
-  AdminHomeScreen({super.key});
+class OtherAdminHomeScreen extends StatelessWidget {
+  OtherAdminHomeScreen({super.key});
 
   final DashboardService _dashboardService = DashboardService();
 
@@ -267,39 +267,6 @@ class AdminHomeScreen extends StatelessWidget {
                     );
                   },
                 ),
-                _buildActionCard(
-                  context,
-                  'Register System Admin',
-                  Icons.admin_panel_settings,
-                  Colors.red,
-                  () => Navigator.pushNamed(context, '/admin-register'),
-                  iconSize,
-                  titleFontSize,
-                  cardPadding,
-                ),
-                _buildActionCard(
-                  context,
-                  'Register Client/Driver',
-                  Icons.person_add,
-                  Colors.teal,
-                  () => Navigator.pushNamed(
-                    context,
-                    '/client-or-driver-register',
-                  ),
-                  iconSize,
-                  titleFontSize,
-                  cardPadding,
-                ),
-                _buildActionCard(
-                  context,
-                  'Register Other Admin',
-                  Icons.supervisor_account,
-                  Colors.indigo,
-                  () => Navigator.pushNamed(context, '/other-admin-register'),
-                  iconSize,
-                  titleFontSize,
-                  cardPadding,
-                ),
               ],
             ),
           ),
@@ -371,61 +338,6 @@ class AdminHomeScreen extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-    double iconSize,
-    double titleFontSize,
-    double padding,
-  ) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: EdgeInsets.all(padding),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [color.withValues(alpha: 0.7), color],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: iconSize, color: Colors.white),
-              SizedBox(height: padding * 0.5),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: titleFontSize,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
