@@ -9,6 +9,7 @@ import 'package:logistics/screens/client/client_dashboard.dart';
 import 'package:logistics/screens/driver/driver_dashboard.dart';
 import 'package:logistics/screens/home/client_login_page.dart';
 import 'package:logistics/screens/home/home_page.dart';
+import 'package:logistics/screens/home/fuel_card_routes.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/services/location_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -53,8 +54,8 @@ class LogisticsApp extends StatelessWidget {
           '/admin-login': (context) => const AdminLoginPage(),
           '/other-admin-login': (context) => const OtherAdminLoginPage(),
           '/admin-register': (context) => const AdminRegisterPage(),
-          '/other-admin-register':
-              (context) => const OtherAdminRegisterPage(), // Add this route
+          '/other-admin-register': (context) => const OtherAdminRegisterPage(),
+          ...FuelCardRoutes.getRoutes(),
         },
         debugShowCheckedModeBanner: false,
       ),

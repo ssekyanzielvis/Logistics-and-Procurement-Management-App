@@ -136,6 +136,8 @@ class AuthService extends ChangeNotifier {
           'phone': phone,
           'role': role ?? 'user',
           'profile_image': profileImage,
+          'created_at': DateTime.now().toIso8601String(), // Add this line
+          'updated_at': DateTime.now().toIso8601String(), // Add this line
         });
       }
 

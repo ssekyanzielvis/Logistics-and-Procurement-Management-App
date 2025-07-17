@@ -149,6 +149,7 @@ class ClientHomeScreen extends StatelessWidget {
                   Colors.green,
                   () {
                     // Navigate to create consignment
+                    Navigator.pushNamed(context, '/create-consignment');
                   },
                 ),
                 _buildActionCard(
