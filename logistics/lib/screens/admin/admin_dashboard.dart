@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:logistics/screens/admin/analytics_screen.dart';
 import 'package:logistics/screens/admin/consignment_management_screen.dart';
-// New import
 import 'package:logistics/screens/admin/user_management_screen.dart';
 import 'package:logistics/screens/client/chat_list_screen.dart';
+import 'package:logistics/screens/home/delivery_screen.dart';
 import 'package:logistics/screens/home/fuel_card_dashboard.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
@@ -306,6 +306,22 @@ class AdminHomeScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => FuelCardDashboard(),
+                    ),
+                  ),
+                  iconSize,
+                  titleFontSize,
+                  cardPadding,
+                ),
+                // New Delivery Management Card
+                _buildActionCard(
+                  context,
+                  'Delivery Management',
+                  Icons.delivery_dining,
+                  Colors.deepOrange,
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DeliveryScreen(driverId: ''),
                     ),
                   ),
                   iconSize,

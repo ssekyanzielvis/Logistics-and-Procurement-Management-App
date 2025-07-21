@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:logistics/screens/driver/available_consignments_screen.dart';
 import 'package:logistics/screens/driver/my_deliveries_screen.dart';
 import 'package:logistics/screens/client/chat_list_screen.dart';
-// Assuming FuelCardDashboard is DriverFuelCardScreen
+import 'package:logistics/screens/home/delivery_screen.dart';
 import 'package:logistics/screens/home/driver_fuel_card_screen.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
@@ -171,6 +171,23 @@ class DriverHomeScreen extends StatelessWidget {
                         builder:
                             (context) =>
                                 DriverFuelCardScreen(driverId: user!.id),
+                      ),
+                    );
+                  },
+                ),
+                // New Delivery Screen Card
+                _buildStatCard(
+                  context,
+                  'Start Delivery',
+                  'New',
+                  Icons.directions_car,
+                  Colors.red,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => DeliveryScreen(driverId: user!.id),
                       ),
                     );
                   },

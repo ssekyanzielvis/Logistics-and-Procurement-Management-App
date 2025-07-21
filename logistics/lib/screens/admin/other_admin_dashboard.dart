@@ -3,6 +3,7 @@ import 'package:logistics/screens/admin/analytics_screen.dart';
 import 'package:logistics/screens/admin/consignment_management_screen.dart';
 import 'package:logistics/screens/admin/user_management_screen.dart';
 import 'package:logistics/screens/client/chat_list_screen.dart';
+import 'package:logistics/screens/home/fuel_card_dashboard.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
@@ -27,21 +28,19 @@ class _OtherAdminDashboardState extends State<OtherAdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    // Get screen dimensions for responsive sizing
     final screenWidth = MediaQuery.of(context).size.width;
-    final fontScale = screenWidth / 400; // Base scale for font/icon sizes
-    // e.g., 12px on 400px screen
-    final toolbarHeight = screenWidth * 0.12; // e.g., 48px on 400px screen
+    final fontScale = screenWidth / 400;
+    final toolbarHeight = screenWidth * 0.12;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Board Members Dashboard'),
         backgroundColor: AppConstants.primaryColor,
         foregroundColor: Colors.white,
-        toolbarHeight: toolbarHeight, // Reduced to save vertical space
+        toolbarHeight: toolbarHeight,
         actions: [
           IconButton(
-            icon: Icon(Icons.chat, size: fontScale * 24), // Scaled icon size
+            icon: Icon(Icons.chat, size: fontScale * 24),
             tooltip: 'Chats',
             onPressed: () {
               Navigator.push(
@@ -70,7 +69,7 @@ class _OtherAdminDashboardState extends State<OtherAdminDashboard> {
         },
         selectedItemColor: AppConstants.primaryColor,
         unselectedItemColor: Colors.grey,
-        selectedFontSize: fontScale * 12, // Responsive font size
+        selectedFontSize: fontScale * 12,
         unselectedFontSize: fontScale * 10,
         items: [
           BottomNavigationBarItem(
@@ -102,16 +101,13 @@ class OtherAdminHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get screen dimensions for responsive sizing
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    // Base scale for font/icon sizes
-    final cardPadding = screenWidth * 0.03; // e.g., 12px on 400px screen
-    final iconSize = screenWidth * 0.08; // e.g., 32px
-    final valueFontSize = screenWidth * 0.05; // e.g., 20px
-    final titleFontSize = screenWidth * 0.035; // e.g., 14px
-    final childAspectRatio =
-        screenWidth / screenHeight * 2.2; // Dynamic aspect ratio
+    final cardPadding = screenWidth * 0.03;
+    final iconSize = screenWidth * 0.08;
+    final valueFontSize = screenWidth * 0.05;
+    final titleFontSize = screenWidth * 0.035;
+    final childAspectRatio = screenWidth / screenHeight * 2.2;
 
     return Padding(
       padding: EdgeInsets.all(cardPadding),
@@ -192,7 +188,7 @@ class OtherAdminHomeScreen extends StatelessWidget {
               crossAxisSpacing: cardPadding,
               mainAxisSpacing: cardPadding,
               padding: EdgeInsets.all(cardPadding),
-              childAspectRatio: childAspectRatio, // Dynamic aspect ratio
+              childAspectRatio: childAspectRatio,
               shrinkWrap: true,
               children: [
                 FutureBuilder<int>(
@@ -266,6 +262,31 @@ class OtherAdminHomeScreen extends StatelessWidget {
                       cardPadding,
                     );
                   },
+                ),
+                _buildActionCard(
+                  context,
+                  'Fuel Management',
+                  Icons.local_gas_station,
+                  Colors.amber,
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FuelCardDashboard(),
+                    ),
+                  ),
+                  iconSize,
+                  titleFontSize,
+                  cardPadding,
+                ),
+                _buildActionCard(
+                  context,
+                  'Manage Deliveries',
+                  Icons.assignment,
+                  Colors.teal,
+                  () => Navigator.pushNamed(context, '/delivery'),
+                  iconSize,
+                  titleFontSize,
+                  cardPadding,
                 ),
               ],
             ),
@@ -342,9 +363,63 @@ class OtherAdminHomeScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildActionCard(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+    double iconSize,
+    double titleFontSize,
+    double padding,
+  ) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: EdgeInsets.all(padding),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [color.withValues(alpha: 0.7), color],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: iconSize, color: Colors.white),
+              SizedBox(height: padding * 0.5),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: titleFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-// Service to fetch dashboard statistics
 class DashboardService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
