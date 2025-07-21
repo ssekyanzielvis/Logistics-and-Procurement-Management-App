@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:logistics/screens/driver/available_consignments_screen.dart';
 import 'package:logistics/screens/driver/my_deliveries_screen.dart';
 import 'package:logistics/screens/client/chat_list_screen.dart';
+// Assuming FuelCardDashboard is DriverFuelCardScreen
+import 'package:logistics/screens/home/driver_fuel_card_screen.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
@@ -129,28 +131,49 @@ class DriverHomeScreen extends StatelessWidget {
               mainAxisSpacing: 16,
               children: [
                 _buildStatCard(
+                  context,
                   'Available Jobs',
                   '5',
                   Icons.local_shipping,
                   Colors.blue,
                 ),
                 _buildStatCard(
+                  context,
                   'My Deliveries',
                   '3',
                   Icons.assignment,
                   Colors.orange,
                 ),
                 _buildStatCard(
+                  context,
                   'Completed Today',
                   '2',
                   Icons.check_circle,
                   Colors.green,
                 ),
                 _buildStatCard(
+                  context,
                   'Earnings Today',
                   '\$120',
                   Icons.attach_money,
                   Colors.purple,
+                ),
+                _buildStatCard(
+                  context,
+                  'Fuel Cards',
+                  'View',
+                  Icons.credit_card,
+                  Colors.teal,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) =>
+                                DriverFuelCardScreen(driverId: user!.id),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -188,45 +211,50 @@ class DriverHomeScreen extends StatelessWidget {
   }
 
   Widget _buildStatCard(
+    BuildContext context,
     String title,
     String value,
     IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 40, color: color),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
+    Color color, {
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withValues(alpha: 0.1),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 3),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 40, color: color),
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
