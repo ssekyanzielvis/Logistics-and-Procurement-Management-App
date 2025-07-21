@@ -13,7 +13,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   final SupabaseClient _supabase = Supabase.instance.client;
   bool _isLoading = true;
 
-  Map<String, int> _stats = {
+  final Map<String, int> _stats = {
     'total_users': 0,
     'total_clients': 0,
     'total_drivers': 0,

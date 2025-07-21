@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:logistics/screens/home/responsive_layout.dart';
 import '../../../models/fuel_card_models.dart';
-import '../../../widgets/responsive_layout.dart';
 
 class RecentTransactions extends StatelessWidget {
   final List<FuelTransaction> transactions;
+  final String? cardId; // Optional cardId for navigation to full transactions
 
-  const RecentTransactions({Key? key, required this.transactions}) : super(key: key);
+  const RecentTransactions({
+    super.key,
+    required this.transactions,
+    this.cardId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +31,16 @@ class RecentTransactions extends StatelessWidget {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: () {
-                    // Navigate to full transactions list
-                  },
+                  onPressed:
+                      cardId != null
+                          ? () {
+                            Navigator.pushNamed(
+                              context,
+                              '/fuel-card/transactions',
+                              arguments: cardId,
+                            );
+                          }
+                          : null,
                   icon: const Icon(Icons.history, size: 16),
                   label: const Text('View All'),
                 ),
@@ -102,10 +114,12 @@ class RecentTransactions extends StatelessWidget {
   Widget _buildMobileTransactionTile(FuelTransaction transaction) {
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: _getFuelTypeColor(transaction.fuelType).withOpacity(0.1),
+        backgroundColor: _getTransactionTypeColor(
+          transaction.type,
+        ).withOpacity(0.1),
         child: Icon(
           Icons.local_gas_station,
-          color: _getFuelTypeColor(transaction.fuelType),
+          color: _getTransactionTypeColor(transaction.type),
         ),
       ),
       title: Text(
@@ -115,25 +129,30 @@ class RecentTransactions extends StatelessWidget {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('${transaction.fuelType.toUpperCase()} • ${transaction.liters?.toStringAsFixed(1) ?? 'N/A'}L'),
-          Text(transaction.stationName ?? 'Unknown Station'),
-          Text(DateFormat('MMM dd, yyyy HH:mm').format(transaction.transactionDate)),
+          Text(
+            '${transaction.type.name.toUpperCase()} • ${transaction.quantity.toStringAsFixed(1)}L',
+          ),
+          Text(transaction.station),
+          Text(
+            DateFormat(
+              'MMM dd, yyyy HH:mm',
+            ).format(transaction.transactionDate),
+          ),
         ],
       ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: Colors.grey[400],
-      ),
+      trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
     );
   }
 
   Widget _buildTabletTransactionTile(FuelTransaction transaction) {
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: _getFuelTypeColor(transaction.fuelType).withOpacity(0.1),
+        backgroundColor: _getTransactionTypeColor(
+          transaction.type,
+        ).withOpacity(0.1),
         child: Icon(
           Icons.local_gas_station,
-          color: _getFuelTypeColor(transaction.fuelType),
+          color: _getTransactionTypeColor(transaction.type),
         ),
       ),
       title: Row(
@@ -146,14 +165,16 @@ class RecentTransactions extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: _getFuelTypeColor(transaction.fuelType).withOpacity(0.1),
+              color: _getTransactionTypeColor(
+                transaction.type,
+              ).withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              transaction.fuelType.toUpperCase(),
+              transaction.type.name.toUpperCase(),
               style: TextStyle(
                 fontSize: 10,
-                color: _getFuelTypeColor(transaction.fuelType),
+                color: _getTransactionTypeColor(transaction.type),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -163,14 +184,17 @@ class RecentTransactions extends StatelessWidget {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('${transaction.liters?.toStringAsFixed(1) ?? 'N/A'}L • ${transaction.stationName ?? 'Unknown Station'}'),
-          Text(DateFormat('MMM dd, yyyy HH:mm').format(transaction.transactionDate)),
+          Text(
+            '${transaction.quantity.toStringAsFixed(1)}L • ${transaction.station}',
+          ),
+          Text(
+            DateFormat(
+              'MMM dd, yyyy HH:mm',
+            ).format(transaction.transactionDate),
+          ),
         ],
       ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: Colors.grey[400],
-      ),
+      trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
     );
   }
 
@@ -179,11 +203,38 @@ class RecentTransactions extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          const Expanded(flex: 2, child: Text('Date & Time', style: TextStyle(fontWeight: FontWeight.bold))),
-          const Expanded(flex: 1, child: Text('Amount', style: TextStyle(fontWeight: FontWeight.bold))),
-          const Expanded(flex: 1, child: Text('Fuel Type', style: TextStyle(fontWeight: FontWeight.bold))),
-          const Expanded(flex: 1, child: Text('Liters', style: TextStyle(fontWeight: FontWeight.bold))),
-          const Expanded(flex: 2, child: Text('Station', style: TextStyle(fontWeight: FontWeight.bold))),
+          const Expanded(
+            flex: 2,
+            child: Text(
+              'Date & Time',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const Expanded(
+            flex: 1,
+            child: Text(
+              'Amount',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const Expanded(
+            flex: 1,
+            child: Text('Type', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const Expanded(
+            flex: 1,
+            child: Text(
+              'Quantity',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const Expanded(
+            flex: 2,
+            child: Text(
+              'Station',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
         ],
       ),
     );
@@ -200,15 +251,14 @@ class RecentTransactions extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  DateFormat('MMM dd, yyyy').format(transaction.transactionDate),
+                  DateFormat(
+                    'MMM dd, yyyy',
+                  ).format(transaction.transactionDate),
                   style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
                 Text(
                   DateFormat('HH:mm').format(transaction.transactionDate),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -225,14 +275,16 @@ class RecentTransactions extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _getFuelTypeColor(transaction.fuelType).withOpacity(0.1),
+                color: _getTransactionTypeColor(
+                  transaction.type,
+                ).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                transaction.fuelType.toUpperCase(),
+                transaction.type.name.toUpperCase(),
                 style: TextStyle(
                   fontSize: 10,
-                  color: _getFuelTypeColor(transaction.fuelType),
+                  color: _getTransactionTypeColor(transaction.type),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -240,33 +292,27 @@ class RecentTransactions extends StatelessWidget {
           ),
           Expanded(
             flex: 1,
-            child: Text('${transaction.liters?.toStringAsFixed(1) ?? 'N/A'}L'),
+            child: Text('${transaction.quantity.toStringAsFixed(1)}L'),
           ),
           Expanded(
             flex: 2,
-            child: Text(
-              transaction.stationName ?? 'Unknown Station',
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Text(transaction.station, overflow: TextOverflow.ellipsis),
           ),
         ],
       ),
     );
   }
 
-  Color _getFuelTypeColor(String fuelType) {
-    switch (fuelType.toLowerCase()) {
-      case 'diesel':
-        return Colors.orange;
-      case 'petrol':
-      case 'gasoline':
+  Color _getTransactionTypeColor(TransactionType type) {
+    switch (type) {
+      case TransactionType.fuel:
         return Colors.blue;
-      case 'electric':
+      case TransactionType.carWash:
         return Colors.green;
-      case 'hybrid':
+      case TransactionType.convenience:
+        return Colors.orange;
+      case TransactionType.maintenance:
         return Colors.purple;
-      default:
-        return Colors.grey;
     }
   }
 }

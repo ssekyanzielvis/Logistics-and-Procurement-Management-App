@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import 'package:intl/intl.dart';
 import '../../models/fuel_card_models.dart';
 import '../../services/fuel_card_service.dart';
 import '../home/responsive_layout.dart';
@@ -8,10 +8,11 @@ import '../home/responsive_layout.dart';
 class DriverFuelCardScreen extends ConsumerStatefulWidget {
   final String driverId;
 
-  const DriverFuelCardScreen({Key? key, required this.driverId}) : super(key: key);
+  const DriverFuelCardScreen({super.key, required this.driverId});
 
   @override
-  ConsumerState<DriverFuelCardScreen> createState() => _DriverFuelCardScreenState();
+  ConsumerState<DriverFuelCardScreen> createState() =>
+      _DriverFuelCardScreenState();
 }
 
 class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
@@ -28,16 +29,18 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
   Future<void> _loadAssignments() async {
     setState(() => _isLoading = true);
     try {
-      final assignments = await _fuelCardService.getDriverAssignments(widget.driverId);
+      final assignments = await _fuelCardService.getAllAssignments(
+        driverId: widget.driverId,
+      );
       setState(() {
         _assignments = assignments;
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading assignments: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading assignments: $e')));
     }
   }
 
@@ -55,13 +58,14 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ResponsiveLayout(
-              mobile: _buildMobileLayout(),
-              tablet: _buildTabletLayout(),
-              desktop: _buildDesktopLayout(),
-            ),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ResponsiveLayout(
+                mobile: _buildMobileLayout(),
+                tablet: _buildTabletLayout(),
+                desktop: _buildDesktopLayout(),
+              ),
     );
   }
 
@@ -106,15 +110,9 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              flex: 2,
-              child: _buildActiveAssignments(),
-            ),
+            Expanded(flex: 2, child: _buildActiveAssignments()),
             const SizedBox(width: 24),
-            Expanded(
-              flex: 1,
-              child: _buildAssignmentHistory(),
-            ),
+            Expanded(flex: 1, child: _buildAssignmentHistory()),
           ],
         ),
       ),
@@ -122,8 +120,8 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
   }
 
   Widget _buildActiveAssignments() {
-    final activeAssignments = _assignments.where((a) => 
-        a.status == 'assigned' || a.status == 'picked_up').toList();
+    final activeAssignments =
+        _assignments.where((a) => a.unassignedDate == null).toList();
 
     return Card(
       child: Padding(
@@ -133,9 +131,9 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
           children: [
             Text(
               'Active Fuel Cards',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             if (activeAssignments.isEmpty)
@@ -150,7 +148,8 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: activeAssignments.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 16),
+                separatorBuilder:
+                    (context, index) => const SizedBox(height: 16),
                 itemBuilder: (context, index) {
                   final assignment = activeAssignments[index];
                   return _buildAssignmentCard(assignment);
@@ -163,216 +162,126 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
   }
 
   Widget _buildAssignmentCard(FuelCardAssignment assignment) {
-    final card = assignment.fuelCard;
-    if (card == null) return const SizedBox();
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withOpacity(0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  card.cardType == 'digital' ? 'DIGITAL CARD' : 'PHYSICAL CARD',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Icon(
-                  card.cardType == 'digital' ? Icons.smartphone : Icons.credit_card,
-                  color: Colors.white,
-                ),
+    return FutureBuilder<FuelCard?>(
+      future: _fuelCardService.getFuelCard(assignment.fuelCardId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+          return const SizedBox();
+        }
+        final card = snapshot.data!;
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).primaryColor,
+                Theme.of(context).primaryColor.withOpacity(0.8),
               ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            const SizedBox(height: 16),
-            Text(
-              '**** **** **** ${card.cardNumber.substring(card.cardNumber.length - 4)}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'BALANCE',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                     Text(
-                      '\$${card.currentBalance.toStringAsFixed(2)}',
+                      card.cardType.name.toUpperCase(),
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      'LIMIT',
-                      style: TextStyle(
                         color: Colors.white70,
-                        fontSize: 10,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Text(
-                      '\$${card.spendingLimit.toStringAsFixed(2)}',
-                                            style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Icon(
+                      card.cardType == CardType.digital ||
+                              card.cardType == CardType.virtual
+                          ? Icons.smartphone
+                          : Icons.credit_card,
+                      color: Colors.white,
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+                Text(
+                  '**** **** **** ${card.cardNumber.substring(card.cardNumber.length - 4)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'BALANCE',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '\$${card.currentBalance.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const Text(
+                          'LIMIT',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '\$${card.spendingLimit.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (card.status == FuelCardStatus.active)
+                  _buildActiveCardSection(assignment),
               ],
             ),
-            const SizedBox(height: 20),
-            if (assignment.status == 'assigned' && assignment.pickupCode != null)
-              _buildPickupSection(assignment)
-            else if (assignment.status == 'picked_up')
-              _buildActiveCardSection(assignment),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPickupSection(FuelCardAssignment assignment) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.location_on, color: Colors.white, size: 16),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Pickup Location: ${assignment.pickupLocation ?? 'Main Depot'}',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-            ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  children: [
-                    const Text(
-                      'PICKUP CODE',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        assignment.pickupCode!,
-                        style: TextStyle(
-                          color: Theme.of(context).primaryColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                children: [
-                  const Text(
-                    'QR CODE',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: QrImageView(
-                      data: assignment.pickupCode!,
-                      version: QrVersions.auto,
-                      size: 60,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => _confirmPickup(assignment),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Theme.of(context).primaryColor,
-              ),
-              child: const Text('Confirm Pickup'),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -398,19 +307,6 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
               ),
             ],
           ),
-          if (assignment.expectedConsumption != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.local_gas_station, color: Colors.white70, size: 14),
-                const SizedBox(width: 8),
-                Text(
-                  'Expected Consumption: ${assignment.expectedConsumption!.toStringAsFixed(1)}L',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-              ],
-            ),
-          ],
           const SizedBox(height: 12),
           Row(
             children: [
@@ -445,8 +341,8 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
   }
 
   Widget _buildAssignmentHistory() {
-    final completedAssignments = _assignments.where((a) => 
-        a.status == 'completed' || a.status == 'returned').toList();
+    final completedAssignments =
+        _assignments.where((a) => a.unassignedDate != null).toList();
 
     return Card(
       child: Padding(
@@ -456,9 +352,9 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
           children: [
             Text(
               'Assignment History',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             if (completedAssignments.isEmpty)
@@ -486,63 +382,63 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
   }
 
   Widget _buildHistoryTile(FuelCardAssignment assignment) {
-    final card = assignment.fuelCard;
-    if (card == null) return const SizedBox();
-
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: _getStatusColor(assignment.status).withOpacity(0.1),
-        child: Icon(
-          card.cardType == 'digital' ? Icons.smartphone : Icons.credit_card,
-          color: _getStatusColor(assignment.status),
-        ),
-      ),
-      title: Text(
-        '**** **** **** ${card.cardNumber.substring(card.cardNumber.length - 4)}',
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Status: ${assignment.status.toUpperCase()}'),
-          Text('Assigned: ${DateFormat('MMM dd, yyyy').format(assignment.assignedAt)}'),
-          if (assignment.expectedConsumption != null)
-            Text('Expected: ${assignment.expectedConsumption!.toStringAsFixed(1)}L'),
-        ],
-      ),
-      trailing: IconButton(
-        icon: const Icon(Icons.info_outline),
-        onPressed: () => _showAssignmentDetails(assignment),
-      ),
+    return FutureBuilder<FuelCard?>(
+      future: _fuelCardService.getFuelCard(assignment.fuelCardId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+          return const SizedBox();
+        }
+        final card = snapshot.data!;
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundColor: _getStatusColor(card.status).withOpacity(0.1),
+            child: Icon(
+              card.cardType == CardType.digital ||
+                      card.cardType == CardType.virtual
+                  ? Icons.smartphone
+                  : Icons.credit_card,
+              color: _getStatusColor(card.status),
+            ),
+          ),
+          title: Text(
+            '**** **** **** ${card.cardNumber.substring(card.cardNumber.length - 4)}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Status: ${card.status.name.toUpperCase()}'),
+              Text(
+                'Assigned: ${DateFormat('MMM dd, yyyy').format(assignment.assignedDate)}',
+              ),
+              if (assignment.unassignedDate != null)
+                Text(
+                  'Unassigned: ${DateFormat('MMM dd, yyyy').format(assignment.unassignedDate!)}',
+                ),
+            ],
+          ),
+          trailing: IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: () => _showAssignmentDetails(assignment),
+          ),
+        );
+      },
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'assigned':
-        return Colors.orange;
-      case 'picked_up':
+  Color _getStatusColor(FuelCardStatus status) {
+    switch (status) {
+      case FuelCardStatus.active:
         return Colors.blue;
-      case 'completed':
-        return Colors.green;
-      case 'returned':
+      case FuelCardStatus.inactive:
         return Colors.grey;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  Future<void> _confirmPickup(FuelCardAssignment assignment) async {
-    try {
-      await _fuelCardService.updateAssignmentStatus(assignment.id, 'picked_up');
-      _loadAssignments();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Fuel card pickup confirmed')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error confirming pickup: $e')),
-      );
+      case FuelCardStatus.blocked:
+        return Colors.red;
+      case FuelCardStatus.expired:
+        return Colors.orange;
     }
   }
 

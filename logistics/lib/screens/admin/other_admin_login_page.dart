@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'other_admin_dashboard.dart';
 
 class OtherAdminLoginPage extends StatefulWidget {
-  const OtherAdminLoginPage({Key? key}) : super(key: key);
+  const OtherAdminLoginPage({super.key});
 
   @override
   State<OtherAdminLoginPage> createState() => _OtherAdminLoginPageState();

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:logistics/screens/home/responsive_layout.dart';
 import '../../models/fuel_card_models.dart';
 import '../../services/fuel_card_service.dart';
-import '../../widgets/responsive_layout.dart';
 
 class FuelTransactionsScreen extends StatefulWidget {
   final String cardId;
 
-  const FuelTransactionsScreen({Key? key, required this.cardId}) : super(key: key);
+  const FuelTransactionsScreen({super.key, required this.cardId});
 
   @override
   State<FuelTransactionsScreen> createState() => _FuelTransactionsScreenState();
@@ -21,7 +21,13 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
   String _selectedFilter = 'all';
   DateTimeRange? _selectedDateRange;
 
-  final List<String> _filterOptions = ['all', 'diesel', 'petrol', 'electric', 'hybrid'];
+  final List<String> _filterOptions = [
+    'all',
+    'fuel',
+    'carWash',
+    'convenience',
+    'maintenance',
+  ];
 
   @override
   void initState() {
@@ -32,8 +38,8 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
   Future<void> _loadTransactions() async {
     setState(() => _isLoading = true);
     try {
-      final transactions = await _fuelCardService.getFuelTransactions(
-        cardId: widget.cardId,
+      final transactions = await _fuelCardService.getAllTransactions(
+        fuelCardId: widget.cardId,
       );
       setState(() {
         _transactions = transactions;
@@ -42,24 +48,31 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading transactions: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading transactions: $e')));
     }
   }
 
   void _applyFilters() {
     setState(() {
-      _filteredTransactions = _transactions.where((transaction) {
-        bool matchesFilter = _selectedFilter == 'all' || 
-                           transaction.fuelType == _selectedFilter;
-        
-        bool matchesDateRange = _selectedDateRange == null ||
-                              (transaction.transactionDate.isAfter(_selectedDateRange!.start) &&
-                               transaction.transactionDate.isBefore(_selectedDateRange!.end.add(const Duration(days: 1))));
-        
-        return matchesFilter && matchesDateRange;
-      }).toList();
+      _filteredTransactions =
+          _transactions.where((transaction) {
+            bool matchesFilter =
+                _selectedFilter == 'all' ||
+                transaction.type.name == _selectedFilter;
+
+            bool matchesDateRange =
+                _selectedDateRange == null ||
+                (transaction.transactionDate.isAfter(
+                      _selectedDateRange!.start,
+                    ) &&
+                    transaction.transactionDate.isBefore(
+                      _selectedDateRange!.end.add(const Duration(days: 1)),
+                    ));
+
+            return matchesFilter && matchesDateRange;
+          }).toList();
     });
   }
 
@@ -81,13 +94,14 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ResponsiveLayout(
-              mobile: _buildMobileLayout(),
-              tablet: _buildTabletLayout(),
-              desktop: _buildDesktopLayout(),
-            ),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ResponsiveLayout(
+                mobile: _buildMobileLayout(),
+                tablet: _buildTabletLayout(),
+                desktop: _buildDesktopLayout(),
+              ),
     );
   }
 
@@ -138,19 +152,20 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
             ),
           ),
         ),
-        Expanded(
-          flex: 2,
-          child: _buildTransactionsList(),
-        ),
+        Expanded(flex: 2, child: _buildTransactionsList()),
       ],
     );
   }
 
   Widget _buildSummaryCard() {
     final totalAmount = _filteredTransactions.fold<double>(
-      0, (sum, transaction) => sum + transaction.amount);
-    final totalLiters = _filteredTransactions.fold<double>(
-      0, (sum, transaction) => sum + (transaction.liters ?? 0));
+      0,
+      (sum, transaction) => sum + transaction.amount,
+    );
+    final totalQuantity = _filteredTransactions.fold<double>(
+      0,
+      (sum, transaction) => sum + transaction.quantity,
+    );
 
     return Card(
       child: Padding(
@@ -160,9 +175,9 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
           children: [
             Text(
               'Transaction Summary',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Row(
@@ -177,8 +192,8 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
                 ),
                 Expanded(
                   child: _buildSummaryItem(
-                    'Total Liters',
-                    '${totalLiters.toStringAsFixed(1)}L',
+                    'Total Quantity',
+                    '${totalQuantity.toStringAsFixed(1)}L',
                     Icons.local_gas_station,
                     Colors.blue,
                   ),
@@ -199,7 +214,7 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
                 Expanded(
                   child: _buildSummaryItem(
                     'Avg per Transaction',
-                    _filteredTransactions.isEmpty 
+                    _filteredTransactions.isEmpty
                         ? '\$0.00'
                         : '\$${(totalAmount / _filteredTransactions.length).toStringAsFixed(2)}',
                     Icons.trending_up,
@@ -214,7 +229,12 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
     );
   }
 
-  Widget _buildSummaryItem(String label, String value, IconData icon, Color color) {
+  Widget _buildSummaryItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       children: [
         Icon(icon, color: color, size: 24),
@@ -229,10 +249,7 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
         ),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           textAlign: TextAlign.center,
         ),
       ],
@@ -240,10 +257,10 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
   }
 
   Widget _buildStatsCard() {
-    final fuelTypeStats = <String, double>{};
+    final typeStats = <String, double>{};
     for (final transaction in _filteredTransactions) {
-      fuelTypeStats[transaction.fuelType] = 
-          (fuelTypeStats[transaction.fuelType] ?? 0) + transaction.amount;
+      typeStats[transaction.type.name] =
+          (typeStats[transaction.type.name] ?? 0) + transaction.amount;
     }
 
     return Card(
@@ -253,16 +270,19 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Fuel Type Breakdown',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              'Transaction Type Breakdown',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            ...fuelTypeStats.entries.map((entry) {
-              final percentage = fuelTypeStats.values.isEmpty 
-                  ? 0.0 
-                  : (entry.value / fuelTypeStats.values.reduce((a, b) => a + b)) * 100;
+            ...typeStats.entries.map((entry) {
+              final percentage =
+                  typeStats.values.isEmpty
+                      ? 0.0
+                      : (entry.value /
+                              typeStats.values.reduce((a, b) => a + b)) *
+                          100;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
@@ -271,7 +291,7 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
                       width: 12,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: _getFuelTypeColor(entry.key),
+                        color: _getTypeColor(entry.key),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -292,7 +312,7 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -317,11 +337,13 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
                     setState(() => _selectedFilter = filter);
                     _applyFilters();
                   },
-                  selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+                  selectedColor: Theme.of(
+                    context,
+                  ).primaryColor.withOpacity(0.2),
                   checkmarkColor: Theme.of(context).primaryColor,
                 ),
               );
-            }).toList(),
+            }),
             if (_selectedDateRange != null)
               Padding(
                 padding: const EdgeInsets.only(left: 8),
@@ -350,23 +372,26 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
           children: [
             Text(
               'Filters',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _selectedFilter,
               decoration: const InputDecoration(
-                labelText: 'Fuel Type',
+                labelText: 'Transaction Type',
                 border: OutlineInputBorder(),
               ),
-              items: _filterOptions.map((filter) {
-                return DropdownMenuItem(
-                  value: filter,
-                  child: Text(filter == 'all' ? 'All Types' : filter.toUpperCase()),
-                );
-              }).toList(),
+              items:
+                  _filterOptions.map((filter) {
+                    return DropdownMenuItem(
+                      value: filter,
+                      child: Text(
+                        filter == 'all' ? 'All Types' : filter.toUpperCase(),
+                      ),
+                    );
+                  }).toList(),
               onChanged: (value) {
                 setState(() => _selectedFilter = value!);
                 _applyFilters();
@@ -378,9 +403,11 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
               child: OutlinedButton.icon(
                 onPressed: _selectDateRange,
                 icon: const Icon(Icons.date_range),
-                label: Text(_selectedDateRange == null 
-                    ? 'Select Date Range' 
-                    : 'Date Range Selected'),
+                label: Text(
+                  _selectedDateRange == null
+                      ? 'Select Date Range'
+                      : 'Date Range Selected',
+                ),
               ),
             ),
           ],
@@ -408,10 +435,12 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: _getFuelTypeColor(transaction.fuelType).withOpacity(0.1),
+              backgroundColor: _getTypeColor(
+                transaction.type.name,
+              ).withOpacity(0.1),
               child: Icon(
                 Icons.local_gas_station,
-                color: _getFuelTypeColor(transaction.fuelType),
+                color: _getTypeColor(transaction.type.name),
               ),
             ),
             title: Text(
@@ -421,35 +450,42 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${transaction.fuelType.toUpperCase()} • ${transaction.liters?.toStringAsFixed(1) ?? 'N/A'}L'),
-                Text(transaction.stationName ?? 'Unknown Station'),
-                                Text(transaction.location ?? 'Unknown Location'),
-                Text(DateFormat('MMM dd, yyyy HH:mm').format(transaction.transactionDate)),
+                Text(
+                  '${transaction.type.name.toUpperCase()} • ${transaction.quantity.toStringAsFixed(1)}L',
+                ),
+                Text(transaction.station),
+                Text(transaction.location),
+                Text(
+                  DateFormat(
+                    'MMM dd, yyyy HH:mm',
+                  ).format(transaction.transactionDate),
+                ),
               ],
             ),
             trailing: PopupMenuButton(
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'details',
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline),
-                      SizedBox(width: 8),
-                      Text('View Details'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'receipt',
-                  child: Row(
-                    children: [
-                      Icon(Icons.receipt),
-                      SizedBox(width: 8),
-                      Text('View Receipt'),
-                    ],
-                  ),
-                ),
-              ],
+              itemBuilder:
+                  (context) => [
+                    const PopupMenuItem(
+                      value: 'details',
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline),
+                          SizedBox(width: 8),
+                          Text('View Details'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'receipt',
+                      child: Row(
+                        children: [
+                          Icon(Icons.receipt),
+                          SizedBox(width: 8),
+                          Text('View Receipt'),
+                        ],
+                      ),
+                    ),
+                  ],
               onSelected: (value) {
                 if (value == 'details') {
                   _showTransactionDetails(transaction);
@@ -464,16 +500,15 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
     );
   }
 
-  Color _getFuelTypeColor(String fuelType) {
-    switch (fuelType.toLowerCase()) {
-      case 'diesel':
-        return Colors.orange;
-      case 'petrol':
-      case 'gasoline':
+  Color _getTypeColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'fuel':
         return Colors.blue;
-      case 'electric':
+      case 'carWash':
         return Colors.green;
-      case 'hybrid':
+      case 'convenience':
+        return Colors.orange;
+      case 'maintenance':
         return Colors.purple;
       default:
         return Colors.grey;
@@ -483,62 +518,70 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
   void _showFilterDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Filter Transactions'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              value: _selectedFilter,
-              decoration: const InputDecoration(
-                labelText: 'Fuel Type',
-                border: OutlineInputBorder(),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Filter Transactions'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: _selectedFilter,
+                  decoration: const InputDecoration(
+                    labelText: 'Transaction Type',
+                    border: OutlineInputBorder(),
+                  ),
+                  items:
+                      _filterOptions.map((filter) {
+                        return DropdownMenuItem(
+                          value: filter,
+                          child: Text(
+                            filter == 'all'
+                                ? 'All Types'
+                                : filter.toUpperCase(),
+                          ),
+                        );
+                      }).toList(),
+                  onChanged: (value) {
+                    setState(() => _selectedFilter = value!);
+                  },
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: _selectDateRange,
+                  icon: const Icon(Icons.date_range),
+                  label: Text(
+                    _selectedDateRange == null
+                        ? 'Select Date Range'
+                        : 'Date Range Selected',
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedFilter = 'all';
+                    _selectedDateRange = null;
+                  });
+                  _applyFilters();
+                  Navigator.pop(context);
+                },
+                child: const Text('Clear'),
               ),
-              items: _filterOptions.map((filter) {
-                return DropdownMenuItem(
-                  value: filter,
-                  child: Text(filter == 'all' ? 'All Types' : filter.toUpperCase()),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedFilter = value!);
-              },
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: _selectDateRange,
-              icon: const Icon(Icons.date_range),
-              label: Text(_selectedDateRange == null 
-                  ? 'Select Date Range' 
-                  : 'Date Range Selected'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _selectedFilter = 'all';
-                _selectedDateRange = null;
-              });
-              _applyFilters();
-              Navigator.pop(context);
-            },
-            child: const Text('Clear'),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _applyFilters();
+                  Navigator.pop(context);
+                },
+                child: const Text('Apply'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _applyFilters();
-              Navigator.pop(context);
-            },
-            child: const Text('Apply'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -552,35 +595,55 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
 
     if (dateRange != null) {
       setState(() => _selectedDateRange = dateRange);
+      _applyFilters();
     }
   }
 
   void _showTransactionDetails(FuelTransaction transaction) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Transaction Details'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDetailRow('Amount', '\$${transaction.amount.toStringAsFixed(2)}'),
-            _buildDetailRow('Fuel Type', transaction.fuelType.toUpperCase()),
-            _buildDetailRow('Liters', '${transaction.liters?.toStringAsFixed(2) ?? 'N/A'}L'),
-            _buildDetailRow('Station', transaction.stationName ?? 'Unknown'),
-            _buildDetailRow('Location', transaction.location ?? 'Unknown'),
-            _buildDetailRow('Date', DateFormat('MMM dd, yyyy HH:mm').format(transaction.transactionDate)),
-            if (transaction.driverId != null)
-              _buildDetailRow('Driver ID', transaction.driverId!),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Transaction Details'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDetailRow(
+                  'Amount',
+                  '\$${transaction.amount.toStringAsFixed(2)}',
+                ),
+                _buildDetailRow('Type', transaction.type.name.toUpperCase()),
+                _buildDetailRow(
+                  'Quantity',
+                  '${transaction.quantity.toStringAsFixed(2)}L',
+                ),
+                _buildDetailRow('Station', transaction.station),
+                _buildDetailRow('Location', transaction.location),
+                _buildDetailRow(
+                  'Date',
+                  DateFormat(
+                    'MMM dd, yyyy HH:mm',
+                  ).format(transaction.transactionDate),
+                ),
+                if (transaction.driverId != null)
+                  _buildDetailRow('Driver ID', transaction.driverId!),
+                if (transaction.authorizationCode != null)
+                  _buildDetailRow(
+                    'Authorization Code',
+                    transaction.authorizationCode!,
+                  ),
+                if (transaction.receiptNumber != null)
+                  _buildDetailRow('Receipt Number', transaction.receiptNumber!),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -594,18 +657,13 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
             width: 80,
             child: Text(
               label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -616,82 +674,98 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
   void _showReceipt(FuelTransaction transaction) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          width: 300,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'FUEL RECEIPT',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      transaction.stationName ?? 'Gas Station',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(transaction.location ?? 'Location'),
-                    const SizedBox(height: 16),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    _buildReceiptRow('Date:', DateFormat('MMM dd, yyyy HH:mm').format(transaction.transactionDate)),
-                    _buildReceiptRow('Fuel Type:', transaction.fuelType.toUpperCase()),
-                    _buildReceiptRow('Quantity:', '${transaction.liters?.toStringAsFixed(2) ?? 'N/A'} L'),
-                    _buildReceiptRow('Price per L:', transaction.liters != null && transaction.liters! > 0 
-                        ? '\$${(transaction.amount / transaction.liters!).toStringAsFixed(3)}'
-                        : 'N/A'),
-                    const SizedBox(height: 8),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    _buildReceiptRow('TOTAL:', '\$${transaction.amount.toStringAsFixed(2)}', bold: true),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
+      builder:
+          (context) => Dialog(
+            child: Container(
+              width: 300,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        // Implement share functionality
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Receipt shared')),
-                        );
-                      },
-                      icon: const Icon(Icons.share),
-                      label: const Text('Share'),
+                  Text(
+                    'FUEL RECEIPT',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Close'),
+                  const SizedBox(height: 20),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[300]!),
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          transaction.station,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(transaction.location),
+                        const SizedBox(height: 16),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        _buildReceiptRow(
+                          'Date:',
+                          DateFormat(
+                            'MMM dd, yyyy HH:mm',
+                          ).format(transaction.transactionDate),
+                        ),
+                        _buildReceiptRow(
+                          'Type:',
+                          transaction.type.name.toUpperCase(),
+                        ),
+                        _buildReceiptRow(
+                          'Quantity:',
+                          '${transaction.quantity.toStringAsFixed(2)} L',
+                        ),
+                        _buildReceiptRow(
+                          'Price per L:',
+                          '\$${transaction.pricePerUnit.toStringAsFixed(3)}',
+                        ),
+                        const SizedBox(height: 8),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        _buildReceiptRow(
+                          'TOTAL:',
+                          '\$${transaction.amount.toStringAsFixed(2)}',
+                          bold: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Receipt shared')),
+                            );
+                          },
+                          icon: const Icon(Icons.share),
+                          label: const Text('Share'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Close'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 

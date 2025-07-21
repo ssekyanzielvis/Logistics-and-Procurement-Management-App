@@ -5,6 +5,8 @@ import '../../models/chat_models.dart';
 import '../../services/chat_service.dart';
 
 class ChatListScreen extends StatefulWidget {
+  const ChatListScreen({super.key});
+
   @override
   _ChatListScreenState createState() => _ChatListScreenState();
 }
@@ -76,8 +78,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
             _loadChatRooms();
           }
         },
-        child: Icon(Icons.chat),
         backgroundColor: Colors.blue[600],
+        child: Icon(Icons.chat),
       ),
     );
   }

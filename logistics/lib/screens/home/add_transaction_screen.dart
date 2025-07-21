@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/fuel_card_models.dart';
+import '../../providers/fuel_card_providers.dart';
 
-class AddTransactionScreen extends StatefulWidget {
-  const AddTransactionScreen({super.key});
+class AddTransactionScreen extends ConsumerStatefulWidget {
+  final FuelCardAssignment? assignment;
+
+  const AddTransactionScreen({super.key, this.assignment});
 
   @override
-  State<AddTransactionScreen> createState() => _AddTransactionScreenState();
+  ConsumerState<AddTransactionScreen> createState() =>
+      _AddTransactionScreenState();
 }
 
-class _AddTransactionScreenState extends State<AddTransactionScreen>
+class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   late AnimationController _animationController;
@@ -29,34 +34,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
 
-  // Mock data - replace with actual service calls
-  final List<FuelCard> _availableCards = [
-    FuelCard(
-      id: '1',
-      cardNumber: '1234-5678-9012',
-      cardHolderName: 'John Doe',
-      provider: FuelCardProvider.shell,
-      status: FuelCardStatus.active,
-      issueDate: DateTime.now().subtract(const Duration(days: 365)),
-      spendingLimit: 500.0,
-      currentBalance: 250.0,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    FuelCard(
-      id: '2',
-      cardNumber: '2345-6789-0123',
-      cardHolderName: 'Jane Smith',
-      provider: FuelCardProvider.bp,
-      status: FuelCardStatus.active,
-      issueDate: DateTime.now().subtract(const Duration(days: 300)),
-      spendingLimit: 750.0,
-      currentBalance: 425.0,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -68,6 +45,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
+
+    // Preselect fuel card if provided via assignment
+    if (widget.assignment != null) {
+      _selectedFuelCardId = widget.assignment!.fuelCardId;
+    }
   }
 
   @override
@@ -85,6 +67,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Access fuel cards from provider
+    final fuelCards = ref.watch(fuelCardsProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Transaction'),
@@ -103,7 +88,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               children: [
                 _buildSectionHeader('Transaction Details'),
                 const SizedBox(height: 16),
-                _buildFuelCardDropdown(),
+                _buildFuelCardDropdown(fuelCards),
                 const SizedBox(height: 16),
                 _buildTransactionTypeSelector(),
                 const SizedBox(height: 16),
@@ -137,13 +122,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+      style: Theme.of(
+        context,
+      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
     );
   }
 
-  Widget _buildFuelCardDropdown() {
+  Widget _buildFuelCardDropdown(List<FuelCard> fuelCards) {
     return Card(
       elevation: 2,
       child: Padding(
@@ -163,23 +148,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.credit_card),
               ),
-              items: _availableCards.map((card) {
-                return DropdownMenuItem<String>(
-                  value: card.id,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(card.cardHolderName),
-                      Text(
-                        '${card.cardNumber} - ${card.provider.name.toUpperCase()}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
+              items:
+                  fuelCards.map((card) {
+                    return DropdownMenuItem<String>(
+                      value: card.id,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(card.cardHolderName),
+                          Text(
+                            '${card.cardNumber} - ${card.provider.name.toUpperCase()}',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Colors.grey[600]),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                    );
+                  }).toList(),
               onChanged: (value) {
                 setState(() {
                   _selectedFuelCardId = value;
@@ -213,19 +198,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
-              children: TransactionType.values.map((type) {
-                return ChoiceChip(
-                  label: Text(_getTransactionTypeLabel(type)),
-                  selected: _selectedType == type,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedType = type;
-                      });
-                    }
-                  },
-                );
-              }).toList(),
+              children:
+                  TransactionType.values.map((type) {
+                    return ChoiceChip(
+                      label: Text(_getTransactionTypeLabel(type)),
+                      selected: _selectedType == type,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            _selectedType = type;
+                          });
+                        }
+                      },
+                    );
+                  }).toList(),
             ),
           ],
         ),
@@ -257,10 +243,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 ],
               ),
             ),
-            TextButton(
-              onPressed: _selectDate,
-              child: const Text('Change'),
-            ),
+            TextButton(onPressed: _selectDate, child: const Text('Change')),
           ],
         ),
       ),
@@ -416,19 +399,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: _isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        child:
+            _isLoading
+                ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                : const Text(
+                  'Add Transaction',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
-              )
-            : const Text(
-                'Add Transaction',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
       ),
     );
   }
@@ -448,17 +432,28 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
-    
+
     final month = months[date.month - 1];
     final day = date.day.toString().padLeft(2, '0');
     final year = date.year;
-    final hour = date.hour == 0 ? 12 : (date.hour > 12 ? date.hour - 12 : date.hour);
+    final hour =
+        date.hour == 0 ? 12 : (date.hour > 12 ? date.hour - 12 : date.hour);
     final minute = date.minute.toString().padLeft(2, '0');
     final ampm = date.hour >= 12 ? 'PM' : 'AM';
-    
+
     return '$month $day, $year - $hour:$minute $ampm';
   }
 
@@ -508,29 +503,34 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     });
 
     try {
-      // Create transaction object
-      final transaction = FuelTransaction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        fuelCardId: _selectedFuelCardId!,
-        type: _selectedType,
-        amount: double.parse(_amountController.text),
-        quantity: double.parse(_quantityController.text),
-        pricePerUnit: double.parse(_pricePerUnitController.text),
-        station: _stationController.text,
-        location: _locationController.text,
-        transactionDate: _selectedDate,
-        authorizationCode: _authCodeController.text.isEmpty
-            ? null
-            : _authCodeController.text,
-        receiptNumber: _receiptController.text.isEmpty
-            ? null
-            : _receiptController.text,
-        createdAt: DateTime.now(),
-      );
-
-      // TODO: Submit to service
-      // await fuelCardService.recordTransaction(transaction);
-      print('Transaction created: ${transaction.toJson()}');
+      // Submit transaction using provider
+      await ref
+          .read(fuelTransactionsProvider.notifier)
+          .add(
+            FuelTransaction(
+              id: DateTime.now().millisecondsSinceEpoch.toString(),
+              fuelCardId: _selectedFuelCardId!,
+              driverId: widget.assignment?.driverId,
+              vehicleId: widget.assignment?.vehicleId,
+              type: _selectedType,
+              amount: double.parse(_amountController.text),
+              quantity: double.parse(_quantityController.text),
+              pricePerUnit: double.parse(_pricePerUnitController.text),
+              station: _stationController.text,
+              location: _locationController.text,
+              transactionDate: _selectedDate,
+              authorizationCode:
+                  _authCodeController.text.isEmpty
+                      ? null
+                      : _authCodeController.text,
+              receiptNumber:
+                  _receiptController.text.isEmpty
+                      ? null
+                      : _receiptController.text,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

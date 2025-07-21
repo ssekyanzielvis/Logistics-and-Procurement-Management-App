@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logistics/screens/home/error_handler.dart';
 import '../services/backup_service.dart';
 import '../services/export_service.dart';
-import '../utils/error_handler.dart';
-import '../utils/date_utils.dart';
+
+import '../screens/home/date_utils.dart' as CustomDateUtils;
 import '../providers/fuel_card_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -19,14 +21,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _autoBackupEnabled = true;
   String _selectedTheme = 'system';
   String _selectedCurrency = 'USD';
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Settings'), elevation: 0),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -99,7 +98,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               },
             ),
           ),
-          
+
           const SizedBox(height: 24),
           _buildSectionHeader('Data Management'),
           _buildSettingsTile(
@@ -133,7 +132,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: 'Export transactions and cards',
             onTap: _showExportDialog,
           ),
-          
+
           const SizedBox(height: 24),
           _buildSectionHeader('Security'),
           _buildSettingsTile(
@@ -150,7 +149,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // Navigate to security settings
             },
           ),
-          
+
           const SizedBox(height: 24),
           _buildSectionHeader('Support'),
           _buildSettingsTile(
@@ -167,7 +166,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: 'App version and information',
             onTap: _showAboutDialog,
           ),
-          
+
           const SizedBox(height: 32),
           ElevatedButton(
             onPressed: _showResetDialog,
@@ -182,7 +181,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
-  
+
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, top: 16),
@@ -195,7 +194,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
-  
+
   Widget _buildSettingsTile({
     required IconData icon,
     required String title,
@@ -209,26 +208,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         leading: Icon(icon, color: Theme.of(context).primaryColor),
         title: Text(title),
         subtitle: Text(subtitle),
-        trailing: trailing ?? (onTap != null ? const Icon(Icons.chevron_right) : null),
+        trailing:
+            trailing ??
+            (onTap != null ? const Icon(Icons.chevron_right) : null),
         onTap: onTap,
       ),
     );
   }
-  
+
   Future<void> _createBackup() async {
     try {
       final cards = ref.read(fuelCardsProvider);
       final transactions = ref.read(fuelTransactionsProvider);
       final assignments = ref.read(fuelCardAssignmentsProvider);
       final lockers = ref.read(fuelCardLockersProvider);
-      
+
       final backupFile = await BackupService().createBackup(
         cards: cards,
         transactions: transactions,
         assignments: assignments,
         lockers: lockers,
       );
-      
+
       if (mounted) {
         ErrorHandler.showSuccess(
           context,
@@ -241,77 +242,79 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     }
   }
-  
+
   void _showRestoreDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Restore Backup'),
-        content: const Text(
-          'This will replace all current data with data from the backup file. This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _selectBackupFile();
-            },
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Future<void> _selectBackupFile() async {
-    try {
-      final backups = await BackupService().getAvailableBackups();
-      
-      if (backups.isEmpty) {
-        if (mounted) {
-          ErrorHandler.showWarning(context, 'No backup files found');
-        }
-        return;
-      }
-      
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Select Backup'),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: backups.length,
-                itemBuilder: (context, index) {
-                  final backup = backups[index];
-                  return ListTile(
-                    title: Text(backup.fileName),
-                    subtitle: Text(
-                      '${DateUtils.formatDateTime(backup.createdAt)}\n'
-                      '${backup.cardCount} cards, ${backup.transactionCount} transactions\n'
-                      'Size: ${backup.formattedSize}',
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _restoreFromBackup(backup);
-                    },
-                  );
-                },
-              ),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Restore Backup'),
+            content: const Text(
+              'This will replace all current data with data from the backup file. This action cannot be undone.',
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Cancel'),
               ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _selectBackupFile();
+                },
+                child: const Text('Continue'),
+              ),
             ],
           ),
+    );
+  }
+
+  Future<void> _selectBackupFile() async {
+    try {
+      final backups = await BackupService().getAvailableBackups();
+
+      if (backups.isEmpty) {
+        if (mounted) {
+          ErrorHandler.showWarning(context, 'No backup files found');
+        }
+        return;
+      }
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('Select Backup'),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: backups.length,
+                    itemBuilder: (context, index) {
+                      final backup = backups[index];
+                      return ListTile(
+                        title: Text(backup.fileName),
+                        subtitle: Text(
+                          '${CustomDateUtils.DateUtils.formatDateTime(backup.createdAt)}\n'
+                          '${backup.cardCount} cards, ${backup.transactionCount} transactions\n'
+                          'Size: ${_formatFileSize(backup.sizeBytes)}',
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _restoreFromBackup(backup);
+                        },
+                      );
+                    },
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ),
         );
       }
     } catch (e) {
@@ -320,18 +323,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     }
   }
-  
+
   Future<void> _restoreFromBackup(BackupInfo backupInfo) async {
     try {
       final backupFile = File(backupInfo.filePath);
       final backupData = await BackupService().restoreFromBackup(backupFile);
-      
+
       // Update providers with restored data
       ref.read(fuelCardsProvider.notifier).replaceAll(backupData.cards);
-      ref.read(fuelTransactionsProvider.notifier).replaceAll(backupData.transactions);
-      ref.read(fuelCardAssignmentsProvider.notifier).replaceAll(backupData.assignments);
+      ref
+          .read(fuelTransactionsProvider.notifier)
+          .replaceAll(backupData.transactions);
+      ref
+          .read(fuelCardAssignmentsProvider.notifier)
+          .replaceAll(backupData.assignments);
       ref.read(fuelCardLockersProvider.notifier).replaceAll(backupData.lockers);
-      
+
       if (mounted) {
         ErrorHandler.showSuccess(context, 'Data restored successfully');
       }
@@ -341,42 +348,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     }
   }
-  
+
   void _showExportDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Export Data'),
-        content: const Text('Choose export format:'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Export Data'),
+            content: const Text('Choose export format:'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _exportToCSV();
+                },
+                child: const Text('CSV'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _exportToPDF();
+                },
+                child: const Text('PDF'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _exportToCSV();
-            },
-            child: const Text('CSV'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _exportToPDF();
-            },
-            child: const Text('PDF'),
-          ),
-        ],
-      ),
     );
   }
-  
+
   Future<void> _exportToCSV() async {
     try {
       final transactions = ref.read(fuelTransactionsProvider);
       final file = await ExportService().exportTransactionsToCSV(transactions);
-      
+
       if (mounted) {
         ErrorHandler.showSuccess(
           context,
@@ -389,12 +397,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     }
   }
-  
+
   Future<void> _exportToPDF() async {
     try {
       final transactions = ref.read(fuelTransactionsProvider);
       final file = await ExportService().exportTransactionsToPDF(transactions);
-      
+
       if (mounted) {
         ErrorHandler.showSuccess(
           context,
@@ -407,63 +415,69 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     }
   }
-  
+
   void _showChangePinDialog() {
     final currentPinController = TextEditingController();
     final newPinController = TextEditingController();
     final confirmPinController = TextEditingController();
-    
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Change PIN'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: currentPinController,
-              decoration: const InputDecoration(labelText: 'Current PIN'),
-              obscureText: true,
-              maxLength: 4,
-              keyboardType: TextInputType.number,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Change PIN'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: currentPinController,
+                  decoration: const InputDecoration(labelText: 'Current PIN'),
+                  obscureText: true,
+                  maxLength: 4,
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: newPinController,
+                  decoration: const InputDecoration(labelText: 'New PIN'),
+                  obscureText: true,
+                  maxLength: 4,
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: confirmPinController,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm New PIN',
+                  ),
+                  obscureText: true,
+                  maxLength: 4,
+                  keyboardType: TextInputType.number,
+                ),
+              ],
             ),
-            TextField(
-              controller: newPinController,
-              decoration: const InputDecoration(labelText: 'New PIN'),
-              obscureText: true,
-              maxLength: 4,
-              keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: confirmPinController,
-              decoration: const InputDecoration(labelText: 'Confirm New PIN'),
-              obscureText: true,
-              maxLength: 4,
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (newPinController.text == confirmPinController.text) {
+                    Navigator.pop(context);
+                    ErrorHandler.showSuccess(
+                      context,
+                      'PIN changed successfully',
+                    );
+                  } else {
+                    ErrorHandler.showError(context, 'PINs do not match');
+                  }
+                },
+                child: const Text('Change PIN'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              if (newPinController.text == confirmPinController.text) {
-                Navigator.pop(context);
-                ErrorHandler.showSuccess(context, 'PIN changed successfully');
-              } else {
-                ErrorHandler.showError(context, 'PINs do not match');
-              }
-            },
-            child: const Text('Change PIN'),
-          ),
-        ],
-      ),
     );
   }
-  
+
   void _showAboutDialog() {
     showAboutDialog(
       context: context,
@@ -471,7 +485,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       applicationVersion: '1.0.0',
       applicationIcon: const Icon(Icons.local_gas_station, size: 48),
       children: [
-        const Text('A comprehensive fuel card management system for fleet operations.'),
+        const Text(
+          'A comprehensive fuel card management system for fleet operations.',
+        ),
         const SizedBox(height: 16),
         const Text('Features:'),
         const Text('• Fuel card management'),
@@ -482,33 +498,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ],
     );
   }
-  
+
   void _showResetDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reset All Data'),
-        content: const Text(
-          'This will permanently delete all fuel cards, transactions, assignments, and settings. This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Reset All Data'),
+            content: const Text(
+              'This will permanently delete all fuel cards, transactions, assignments, and settings. This action cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _resetAllData();
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Reset All Data'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _resetAllData();
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Reset All Data'),
-          ),
-        ],
-      ),
     );
   }
-  
+
   Future<void> _resetAllData() async {
     try {
       // Clear all providers
@@ -516,7 +533,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ref.read(fuelTransactionsProvider.notifier).clear();
       ref.read(fuelCardAssignmentsProvider.notifier).clear();
       ref.read(fuelCardLockersProvider.notifier).clear();
-      
+
       if (mounted) {
         ErrorHandler.showSuccess(context, 'All data has been reset');
       }
@@ -525,5 +542,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ErrorHandler.showError(context, 'Failed to reset data: $e');
       }
     }
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }

@@ -11,10 +11,10 @@ class ChatScreen extends StatefulWidget {
   final ChatUser otherUser;
 
   const ChatScreen({
-    Key? key,
+    super.key,
     required this.chatRoomId,
     required this.otherUser,
-  }) : super(key: key);
+  });
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -338,7 +338,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildEmojiPicker() {
-    return Container(
+    return SizedBox(
       height: 250,
       child: EmojiPickerWidget(
         onEmojiSelected: (emoji) {

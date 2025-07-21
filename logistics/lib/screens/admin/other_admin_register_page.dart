@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 class OtherAdminRegisterPage extends StatefulWidget {
-  const OtherAdminRegisterPage({Key? key}) : super(key: key);
+  const OtherAdminRegisterPage({super.key});
 
   @override
   State<OtherAdminRegisterPage> createState() => _OtherAdminRegisterPageState();
@@ -14,7 +14,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _pageController = PageController();
-  
+
   // Controllers
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
@@ -22,7 +22,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   // State variables
   int _currentStep = 0;
   bool _obscurePassword = true;
@@ -31,13 +31,13 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
   File? _profileImage;
   String _selectedCountryCode = '+1';
   bool _isLoading = false;
-  
+
   // Animation controllers
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   // Password strength
   double _passwordStrength = 0.0;
   String _passwordStrengthText = '';
@@ -54,16 +54,18 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
-    
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic));
-    
+    ).animate(
+      CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+    );
+
     _fadeController.forward();
     _slideController.forward();
   }
@@ -120,82 +122,83 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
   Future<void> _pickImage() async {
     try {
       final ImagePicker picker = ImagePicker();
-      
+
       showModalBottomSheet(
         context: context,
         backgroundColor: Colors.transparent,
-        builder: (context) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
+        builder:
+            (context) => Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
-              const Text(
-                'Select Profile Image',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildImageOption(
-                    icon: Icons.camera_alt,
-                    label: 'Camera',
-                    onTap: () async {
-                      Navigator.pop(context);
-                      final XFile? image = await picker.pickImage(
-                        source: ImageSource.camera,
-                        maxWidth: 512,
-                        maxHeight: 512,
-                        imageQuality: 80,
-                      );
-                      if (image != null) {
-                        setState(() {
-                          _profileImage = File(image.path);
-                        });
-                      }
-                    },
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                  _buildImageOption(
-                    icon: Icons.photo_library,
-                    label: 'Gallery',
-                    onTap: () async {
-                      Navigator.pop(context);
-                      final XFile? image = await picker.pickImage(
-                        source: ImageSource.gallery,
-                        maxWidth: 512,
-                        maxHeight: 512,
-                        imageQuality: 80,
-                      );
-                      if (image != null) {
-                        setState(() {
-                          _profileImage = File(image.path);
-                        });
-                      }
-                    },
+                  const Text(
+                    'Select Profile Image',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildImageOption(
+                        icon: Icons.camera_alt,
+                        label: 'Camera',
+                        onTap: () async {
+                          Navigator.pop(context);
+                          final XFile? image = await picker.pickImage(
+                            source: ImageSource.camera,
+                            maxWidth: 512,
+                            maxHeight: 512,
+                            imageQuality: 80,
+                          );
+                          if (image != null) {
+                            setState(() {
+                              _profileImage = File(image.path);
+                            });
+                          }
+                        },
+                      ),
+                      _buildImageOption(
+                        icon: Icons.photo_library,
+                        label: 'Gallery',
+                        onTap: () async {
+                          Navigator.pop(context);
+                          final XFile? image = await picker.pickImage(
+                            source: ImageSource.gallery,
+                            maxWidth: 512,
+                            maxHeight: 512,
+                            imageQuality: 80,
+                          );
+                          if (image != null) {
+                            setState(() {
+                              _profileImage = File(image.path);
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
                 ],
               ),
-              const SizedBox(height: 30),
-            ],
-          ),
-        ),
+            ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
     }
   }
 
@@ -215,19 +218,12 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
               color: const Color(0xFF6C5CE7).withOpacity(0.1),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF6C5CE7),
-              size: 30,
-            ),
+            child: Icon(icon, color: const Color(0xFF6C5CE7), size: 30),
           ),
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -263,7 +259,9 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
       if (!_agreeToTerms) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please agree to the Terms of Service and Privacy Policy'),
+            content: Text(
+              'Please agree to the Terms of Service and Privacy Policy',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -406,9 +404,10 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
               margin: EdgeInsets.only(right: index < 2 ? 8 : 0),
               height: 4,
               decoration: BoxDecoration(
-                color: index <= _currentStep
-                    ? const Color(0xFF6C5CE7)
-                    : const Color(0xFFE2E8F0),
+                color:
+                    index <= _currentStep
+                        ? const Color(0xFF6C5CE7)
+                        : const Color(0xFFE2E8F0),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -470,7 +469,9 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
               if (value?.isEmpty ?? true) {
                 return 'Email is required';
               }
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
+              if (!RegExp(
+                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value!)) {
                 return 'Please enter a valid email';
               }
               return null;
@@ -553,20 +554,14 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
             decoration: BoxDecoration(
               color: Colors.green.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.green.withOpacity(0.2),
-              ),
+              border: Border.all(color: Colors.green.withOpacity(0.2)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.security,
-                      color: Colors.green,
-                      size: 20,
-                    ),
+                    Icon(Icons.security, color: Colors.green, size: 20),
                     const SizedBox(width: 8),
                     const Text(
                       'Security Tips',
@@ -613,33 +608,31 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
               ),
             ],
           ),
-          child: _profileImage != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(60),
-                  child: Image.file(
-                    _profileImage!,
-                    fit: BoxFit.cover,
-                  ),
-                )
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.add_a_photo,
-                      size: 32,
-                      color: const Color(0xFF6C5CE7),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Add Photo',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF718096),
-                        fontWeight: FontWeight.w500,
+          child:
+              _profileImage != null
+                  ? ClipRRect(
+                    borderRadius: BorderRadius.circular(60),
+                    child: Image.file(_profileImage!, fit: BoxFit.cover),
+                  )
+                  : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.add_a_photo,
+                        size: 32,
+                        color: const Color(0xFF6C5CE7),
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Add Photo',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF718096),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
         ),
       ),
     );
@@ -686,24 +679,15 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: const Color(0xFFE2E8F0),
-                width: 1,
-              ),
+              borderSide: BorderSide(color: const Color(0xFFE2E8F0), width: 1),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: Color(0xFF6C5CE7),
-                width: 2,
-              ),
+              borderSide: const BorderSide(color: Color(0xFF6C5CE7), width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: Colors.red,
-                width: 1,
-              ),
+              borderSide: const BorderSide(color: Colors.red, width: 1),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -736,24 +720,25 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFFE2E8F0),
-                ),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _selectedCountryCode,
                   isExpanded: true,
                   icon: const Icon(Icons.arrow_drop_down, size: 20),
-                  items: ['+1', '+44', '+91', '+86', '+81']
-                      .map((code) => DropdownMenuItem(
-                            value: code,
-                            child: Text(
-                              code,
-                              style: const TextStyle(fontSize: 14),
+                  items:
+                      ['+1', '+44', '+91', '+86', '+81']
+                          .map(
+                            (code) => DropdownMenuItem(
+                              value: code,
+                              child: Text(
+                                code,
+                                style: const TextStyle(fontSize: 14),
+                              ),
                             ),
-                          ))
-                      .toList(),
+                          )
+                          .toList(),
                   onChanged: (value) {
                     setState(() {
                       _selectedCountryCode = value!;
@@ -808,10 +793,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
                   ),
                   errorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: Colors.red,
-                      width: 1,
-                    ),
+                    borderSide: const BorderSide(color: Colors.red, width: 1),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -866,7 +848,9 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
                 child: LinearProgressIndicator(
                   value: _passwordStrength,
                   backgroundColor: Colors.grey[300],
-                  valueColor: AlwaysStoppedAnimation<Color>(_passwordStrengthColor),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    _passwordStrengthColor,
+                  ),
                   minHeight: 4,
                 ),
               ),
@@ -884,10 +868,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
           const SizedBox(height: 8),
           const Text(
             'Password must contain: 8+ characters, uppercase, lowercase, number, and special character',
-            style: TextStyle(
-              fontSize: 12,
-              color: Color(0xFF718096),
-            ),
+            style: TextStyle(fontSize: 12, color: Color(0xFF718096)),
           ),
         ],
       ],
@@ -936,9 +917,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
             });
           },
           activeColor: const Color(0xFF6C5CE7),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         ),
         Expanded(
           child: GestureDetector(
@@ -1014,9 +993,10 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
           if (_currentStep > 0) const SizedBox(width: 16),
           Expanded(
             child: ElevatedButton(
-              onPressed: _isLoading
-                  ? null
-                  : _currentStep == 2
+              onPressed:
+                  _isLoading
+                      ? null
+                      : _currentStep == 2
                       ? _submitForm
                       : _nextStep,
               style: ElevatedButton.styleFrom(
@@ -1028,22 +1008,25 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
                 ),
                 elevation: 0,
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              child:
+                  _isLoading
+                      ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                      : Text(
+                        _currentStep == 2 ? 'Register' : 'Next',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    )
-                  : Text(
-                      _currentStep == 2 ? 'Register' : 'Next',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
             ),
           ),
         ],

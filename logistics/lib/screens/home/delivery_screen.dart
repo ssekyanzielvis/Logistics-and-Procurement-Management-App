@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import '../widgets/delivery_note_capture.dart';
-import '../widgets/delivery_notes_history.dart';
+import 'package:logistics/screens/home/delivery_note_capture.dart';
+import 'package:logistics/screens/home/delivery_notes_history.dart';
 
 class DeliveryScreen extends StatefulWidget {
   final String driverId;
 
-  const DeliveryScreen({
-    Key? key,
-    required this.driverId,
-  }) : super(key: key);
+  const DeliveryScreen({super.key, required this.driverId});
 
   @override
   State<DeliveryScreen> createState() => _DeliveryScreenState();
@@ -19,16 +16,18 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DeliveryNoteCapture(
-          driverId: widget.driverId,
-          customerId: 'customer_123', // Replace with actual customer ID
-          customerName: 'John Doe', // Replace with actual customer name
-          deliveryAddress: '123 Main St, City, State', // Replace with actual address
-          onDeliveryCompleted: () {
-            // Refresh the screen or perform any action after delivery completion
-            setState(() {});
-          },
-        ),
+        builder:
+            (context) => DeliveryNoteCapture(
+              driverId: widget.driverId,
+              customerId: 'customer_123', // Replace with actual customer ID
+              customerName: 'John Doe', // Replace with actual customer name
+              deliveryAddress:
+                  '123 Main St, City, State', // Replace with actual address
+              onDeliveryCompleted: () {
+                // Refresh the screen or perform any action after delivery completion
+                setState(() {});
+              },
+            ),
       ),
     );
   }
@@ -37,9 +36,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DeliveryNotesHistory(
-          driverId: widget.driverId,
-        ),
+        builder: (context) => DeliveryNotesHistory(driverId: widget.driverId),
       ),
     );
   }
@@ -59,19 +56,19 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
           children: [
             Text(
               'Welcome, Driver!',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Manage your deliveries and capture delivery notes',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
             ),
             const SizedBox(height: 32),
-            
+
             // New Delivery Card
             Card(
               elevation: 4,
@@ -101,32 +98,27 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                           children: [
                             Text(
                               'New Delivery',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'Capture delivery proof and complete delivery',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[600],
-                              ),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: Colors.grey[600]),
                             ),
                           ],
                         ),
                       ),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        color: Colors.grey[400],
-                      ),
+                      Icon(Icons.arrow_forward_ios, color: Colors.grey[400]),
                     ],
                   ),
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Delivery History Card
             Card(
               elevation: 4,
@@ -156,24 +148,19 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                           children: [
                             Text(
                               'Delivery History',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'View all completed deliveries and notes',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[600],
-                              ),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: Colors.grey[600]),
                             ),
                           ],
                         ),
                       ),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        color: Colors.grey[400],
-                      ),
+                      Icon(Icons.arrow_forward_ios, color: Colors.grey[400]),
                     ],
                   ),
                 ),

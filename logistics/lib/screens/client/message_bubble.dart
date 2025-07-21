@@ -10,13 +10,13 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback onCopy;
 
   const MessageBubble({
-    Key? key,
+    super.key,
     required this.message,
     required this.isMe,
     required this.onReply,
     required this.onDelete,
     required this.onCopy,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

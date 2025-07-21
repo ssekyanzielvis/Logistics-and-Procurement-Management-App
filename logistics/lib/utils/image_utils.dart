@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
 
@@ -9,26 +8,30 @@ class ImageUtils {
     try {
       // Read the image file
       Uint8List imageBytes = await imageFile.readAsBytes();
-      
+
       // Get temporary directory
       Directory tempDir = await getTemporaryDirectory();
       String tempPath = tempDir.path;
-      
+
       // Create compressed file path
-      String fileName = 'compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      String fileName =
+          'compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
       String compressedPath = '$tempPath/$fileName';
-      
+
       // For now, just copy the file (you can add actual compression logic here)
       File compressedFile = File(compressedPath);
       await compressedFile.writeAsBytes(imageBytes);
-      
+
       return compressedFile;
     } catch (e) {
       throw Exception('Failed to compress image: $e');
     }
   }
-  
-  static Future<bool> isImageSizeValid(File imageFile, {int maxSizeInMB = 5}) async {
+
+  static Future<bool> isImageSizeValid(
+    File imageFile, {
+    int maxSizeInMB = 5,
+  }) async {
     try {
       int fileSizeInBytes = await imageFile.length();
       int maxSizeInBytes = maxSizeInMB * 1024 * 1024; // Convert MB to bytes
@@ -37,7 +40,7 @@ class ImageUtils {
       return false;
     }
   }
-  
+
   static String getImageSizeString(File imageFile) {
     try {
       int fileSizeInBytes = imageFile.lengthSync();

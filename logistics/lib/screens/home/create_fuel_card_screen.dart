@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/fuel_card_service.dart';
 import '../home/responsive_layout.dart';
+import '../../models/fuel_card_models.dart'; // Add this import for CardType enum
 
 class CreateFuelCardScreen extends StatefulWidget {
-  const CreateFuelCardScreen({Key? key}) : super(key: key);
+  const CreateFuelCardScreen({super.key});
 
   @override
   State<CreateFuelCardScreen> createState() => _CreateFuelCardScreenState();
@@ -17,7 +18,7 @@ class _CreateFuelCardScreenState extends State<CreateFuelCardScreen> {
   final FuelCardService _fuelCardService = FuelCardService();
 
   String _cardType = 'physical';
-  List<String> _selectedFuelTypes = ['diesel'];
+  final List<String> _selectedFuelTypes = ['diesel'];
   bool _isLoading = false;
 
   final List<String> _availableFuelTypes = [
@@ -74,15 +75,9 @@ class _CreateFuelCardScreenState extends State<CreateFuelCardScreen> {
         padding: const EdgeInsets.all(32),
         child: Row(
           children: [
-            Expanded(
-              flex: 1,
-              child: _buildPreviewCard(),
-            ),
+            Expanded(flex: 1, child: _buildPreviewCard()),
             const SizedBox(width: 32),
-            Expanded(
-              flex: 1,
-              child: _buildForm(),
-            ),
+            Expanded(flex: 1, child: _buildForm()),
           ],
         ),
       ),
@@ -127,9 +122,9 @@ class _CreateFuelCardScreenState extends State<CreateFuelCardScreen> {
       children: [
         Text(
           'Card Type',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Row(
@@ -177,7 +172,7 @@ class _CreateFuelCardScreenState extends State<CreateFuelCardScreen> {
         if (value == null || value.isEmpty) {
           return 'Please enter card number';
         }
-               if (value.replaceAll(' ', '').length != 16) {
+        if (value.replaceAll(' ', '').length != 16) {
           return 'Card number must be 16 digits';
         }
         return null;
@@ -221,31 +216,34 @@ class _CreateFuelCardScreenState extends State<CreateFuelCardScreen> {
       children: [
         Text(
           'Allowed Fuel Types',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
-          children: _availableFuelTypes.map((fuelType) {
-            final isSelected = _selectedFuelTypes.contains(fuelType);
-            return FilterChip(
-              label: Text(fuelType.toUpperCase()),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _selectedFuelTypes.add(fuelType);
-                  } else {
-                    _selectedFuelTypes.remove(fuelType);
-                  }
-                });
-              },
-              selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
-              checkmarkColor: Theme.of(context).primaryColor,
-            );
-          }).toList(),
+          children:
+              _availableFuelTypes.map((fuelType) {
+                final isSelected = _selectedFuelTypes.contains(fuelType);
+                return FilterChip(
+                  label: Text(fuelType.toUpperCase()),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _selectedFuelTypes.add(fuelType);
+                      } else {
+                        _selectedFuelTypes.remove(fuelType);
+                      }
+                    });
+                  },
+                  selectedColor: Theme.of(
+                    context,
+                  ).primaryColor.withOpacity(0.2),
+                  checkmarkColor: Theme.of(context).primaryColor,
+                );
+              }).toList(),
         ),
         if (_selectedFuelTypes.isEmpty)
           Padding(
@@ -275,13 +273,14 @@ class _CreateFuelCardScreenState extends State<CreateFuelCardScreen> {
         Expanded(
           child: ElevatedButton(
             onPressed: _isLoading ? null : _createFuelCard,
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Create Card'),
+            child:
+                _isLoading
+                    ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Text('Create Card'),
           ),
         ),
       ],
@@ -297,9 +296,9 @@ class _CreateFuelCardScreenState extends State<CreateFuelCardScreen> {
           children: [
             Text(
               'Card Preview',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             Container(
@@ -340,14 +339,16 @@ class _CreateFuelCardScreenState extends State<CreateFuelCardScreen> {
                           ),
                         ),
                         Icon(
-                          _cardType == 'digital' ? Icons.smartphone : Icons.credit_card,
+                          _cardType == 'digital'
+                              ? Icons.smartphone
+                              : Icons.credit_card,
                           color: Colors.white,
                         ),
                       ],
                     ),
                     const Spacer(),
                     Text(
-                      _cardNumberController.text.isEmpty 
+                      _cardNumberController.text.isEmpty
                           ? '**** **** **** ****'
                           : _cardNumberController.text,
                       style: const TextStyle(
@@ -387,26 +388,27 @@ class _CreateFuelCardScreenState extends State<CreateFuelCardScreen> {
                         if (_selectedFuelTypes.isNotEmpty)
                           Wrap(
                             spacing: 4,
-                            children: _selectedFuelTypes.take(3).map((type) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  type.toUpperCase(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
+                            children:
+                                _selectedFuelTypes.take(3).map((type) {
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      type.toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
                           ),
                       ],
                     ),
@@ -432,11 +434,12 @@ class _CreateFuelCardScreenState extends State<CreateFuelCardScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await _fuelCardService.createFuelCard(
+      await _fuelCardService.addCard(
         cardNumber: _cardNumberController.text.replaceAll(' ', ''),
-        cardType: _cardType,
+        cardType:
+            _cardType == 'physical' ? CardType.physical : CardType.digital,
         spendingLimit: double.parse(_spendingLimitController.text),
-        allowedFuelTypes: _selectedFuelTypes,
+        fuelTypeRestrictions: _selectedFuelTypes,
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -445,9 +448,9 @@ class _CreateFuelCardScreenState extends State<CreateFuelCardScreen> {
 
       Navigator.pop(context, true);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error creating fuel card: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error creating fuel card: $e')));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -462,18 +465,17 @@ class _CardNumberFormatter extends TextInputFormatter {
   ) {
     final text = newValue.text.replaceAll(' ', '');
     final buffer = StringBuffer();
-    
+
     for (int i = 0; i < text.length; i++) {
       if (i > 0 && i % 4 == 0) {
         buffer.write(' ');
       }
       buffer.write(text[i]);
     }
-    
+
     return TextEditingValue(
       text: buffer.toString(),
       selection: TextSelection.collapsed(offset: buffer.length),
     );
   }
 }
-

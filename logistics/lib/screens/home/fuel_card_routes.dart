@@ -5,11 +5,11 @@ import 'package:logistics/screens/home/assignment_details_screen.dart';
 import 'package:logistics/screens/home/create_fuel_card_screen.dart';
 import 'package:logistics/screens/home/driver_fuel_card_screen.dart';
 import 'package:logistics/screens/home/fuel_card_lockers_screen.dart';
+import 'package:logistics/screens/home/fuel_card_management_screen.dart';
 import 'package:logistics/screens/home/fuel_transactions_screen.dart';
 
-
 class AssignFuelCardScreen extends StatelessWidget {
-  const AssignFuelCardScreen({Key? key}) : super(key: key);
+  const AssignFuelCardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,6 @@ class AssignFuelCardScreen extends StatelessWidget {
     );
   }
 }
-
 
 class FuelCardRoutes {
   static Map<String, WidgetBuilder> getRoutes() {
@@ -32,11 +31,13 @@ class FuelCardRoutes {
       '/fuel-card/create': (context) => const CreateFuelCardScreen(),
       '/fuel-card/lockers': (context) => const FuelCardLockersScreen(),
       '/fuel-card/add-transaction': (context) {
-        final assignment = ModalRoute.of(context)!.settings.arguments as FuelCardAssignment;
+        final assignment =
+            ModalRoute.of(context)!.settings.arguments as FuelCardAssignment;
         return AddTransactionScreen(assignment: assignment);
       },
       '/fuel-card/assignment-details': (context) {
-        final assignment = ModalRoute.of(context)!.settings.arguments as FuelCardAssignment;
+        final assignment =
+            ModalRoute.of(context)!.settings.arguments as FuelCardAssignment;
         return AssignmentDetailsScreen(assignment: assignment);
       },
       '/fuel-card/transactions': (context) {
@@ -47,5 +48,3 @@ class FuelCardRoutes {
     };
   }
 }
-
-

@@ -202,7 +202,7 @@ class _MyConsignmentsScreenState extends State<MyConsignmentsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildDetailRow('ID', consignment.id.substring(0, 8) + '...'),
+                  _buildDetailRow('ID', '${consignment.id.substring(0, 8)}...'),
                   _buildDetailRow('Item', consignment.itemDescription),
                   _buildDetailRow('Weight', '${consignment.weight} kg'),
                   _buildDetailRow('Pickup', consignment.pickupLocation),

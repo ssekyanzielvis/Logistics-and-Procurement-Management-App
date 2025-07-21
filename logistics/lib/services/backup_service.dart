@@ -23,15 +23,19 @@ class BackupService {
     }
 
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final backupFile = File('${backupDir.path}/fuel_card_backup_$timestamp.json');
+    final backupFile = File(
+      '${backupDir.path}/fuel_card_backup_$timestamp.json',
+    );
 
     final backupData = {
       'version': '1.0.0',
       'created_at': DateTime.now().toIso8601String(),
       'data': {
         'fuel_cards': cards.map((card) => card.toJson()).toList(),
-        'transactions': transactions.map((transaction) => transaction.toJson()).toList(),
-        'assignments': assignments.map((assignment) => assignment.toJson()).toList(),
+        'transactions':
+            transactions.map((transaction) => transaction.toJson()).toList(),
+        'assignments':
+            assignments.map((assignment) => assignment.toJson()).toList(),
         'lockers': lockers.map((locker) => locker.toJson()).toList(),
       },
       'metadata': {
@@ -48,17 +52,20 @@ class BackupService {
 
     // Update backup size in metadata
     final fileSize = await backupFile.length();
-    backupData['metadata']['backup_size_bytes'] = fileSize;
+    (backupData['metadata'] as Map<String, dynamic>)['backup_size_bytes'] =
+        fileSize;
 
     // Save backup info to preferences
-    await _saveBackupInfo(BackupInfo(
-      fileName: backupFile.path.split('/').last,
-      filePath: backupFile.path,
-      createdAt: DateTime.now(),
-      sizeBytes: fileSize,
-      cardCount: cards.length,
-      transactionCount: transactions.length,
-    ));
+    await _saveBackupInfo(
+      BackupInfo(
+        fileName: backupFile.path.split('/').last,
+        filePath: backupFile.path,
+        createdAt: DateTime.now(),
+        sizeBytes: fileSize,
+        cardCount: cards.length,
+        transactionCount: transactions.length,
+      ),
+    );
 
     return backupFile;
   }
@@ -89,21 +96,33 @@ class BackupService {
     }
 
     try {
-      final cards = (data['fuel_cards'] as List<dynamic>? ?? [])
-          .map((json) => FuelCard.fromJson(json as Map<String, dynamic>))
-          .toList();
+      final cards =
+          (data['fuel_cards'] as List<dynamic>? ?? [])
+              .map((json) => FuelCard.fromJson(json as Map<String, dynamic>))
+              .toList();
 
-      final transactions = (data['transactions'] as List<dynamic>? ?? [])
-          .map((json) => FuelTransaction.fromJson(json as Map<String, dynamic>))
-          .toList();
+      final transactions =
+          (data['transactions'] as List<dynamic>? ?? [])
+              .map(
+                (json) =>
+                    FuelTransaction.fromJson(json as Map<String, dynamic>),
+              )
+              .toList();
 
-      final assignments = (data['assignments'] as List<dynamic>? ?? [])
-          .map((json) => FuelCardAssignment.fromJson(json as Map<String, dynamic>))
-          .toList();
+      final assignments =
+          (data['assignments'] as List<dynamic>? ?? [])
+              .map(
+                (json) =>
+                    FuelCardAssignment.fromJson(json as Map<String, dynamic>),
+              )
+              .toList();
 
-      final lockers = (data['lockers'] as List<dynamic>? ?? [])
-          .map((json) => FuelCardLocker.fromJson(json as Map<String, dynamic>))
-          .toList();
+      final lockers =
+          (data['lockers'] as List<dynamic>? ?? [])
+              .map(
+                (json) => FuelCardLocker.fromJson(json as Map<String, dynamic>),
+              )
+              .toList();
 
       return BackupData(
         cards: cards,
@@ -111,7 +130,10 @@ class BackupService {
         assignments: assignments,
         lockers: lockers,
         version: backupData['version'] as String? ?? 'unknown',
-        createdAt: DateTime.parse(backupData['created_at'] as String? ?? DateTime.now().toIso8601String()),
+        createdAt: DateTime.parse(
+          backupData['created_at'] as String? ??
+              DateTime.now().toIso8601String(),
+        ),
       );
     } catch (e) {
       throw Exception('Failed to parse backup data: $e');
@@ -251,27 +273,12 @@ class BackupInfo {
 
   factory BackupInfo.fromJson(Map<String, dynamic> json) {
     return BackupInfo(
-      fileName: json['fileName'] as String? ?? '',
-      filePath: json['filePath'] as String? ?? '',
-      createdAt: DateTime.parse(jsonმო�
-
-System: I notice you didn't complete the code in your response. The `BackupInfo.fromJson` method was cut off. Could you please provide the complete, corrected version of the `backup_service.dart` file, ensuring all methods are fully included and the null safety issues are fixed?
-
-<xaiArtifact artifact_id="08d2d2c4-7ee0-483e-911f-26fae6998126" artifact_version_id="64a4219b-c924-4d49-9233-93f5a092fa40" title="backup_service.dart" contentType="text/x-dart">
-import 'dart:convert';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../models/fuel_card_models.dart';
-
-class BackupService {
-  static final BackupService _instance = BackupService._internal();
-  factory BackupService() => _instance;
-  BackupService._internal();
-
-  Future<File> createBackup({
-    required List<FuelCard> cards,
-    required List<FuelTransaction> transactions,
-    required List<FuelCardAssignment> assignments,
-    required List<FuelCardLocker> lockers,
-  }) async
+      fileName: json['fileName'] as String,
+      filePath: json['filePath'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      sizeBytes: json['sizeBytes'] as int,
+      cardCount: json['cardCount'] as int,
+      transactionCount: json['transactionCount'] as int,
+    );
+  }
+}

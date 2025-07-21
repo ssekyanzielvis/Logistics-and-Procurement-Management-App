@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 class EmojiPickerWidget extends StatelessWidget {
   final Function(String) onEmojiSelected;
 
-  const EmojiPickerWidget({Key? key, required this.onEmojiSelected})
-    : super(key: key);
+  const EmojiPickerWidget({super.key, required this.onEmojiSelected});
 
   static const List<String> _emojis = [
     '😀',

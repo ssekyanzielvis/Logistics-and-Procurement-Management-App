@@ -7,38 +7,49 @@ import '../home/responsive_layout.dart';
 class AssignmentDetailsScreen extends StatefulWidget {
   final FuelCardAssignment assignment;
 
-  const AssignmentDetailsScreen({Key? key, required this.assignment}) : super(key: key);
+  const AssignmentDetailsScreen({super.key, required this.assignment});
 
   @override
-  State<AssignmentDetailsScreen> createState() => _AssignmentDetailsScreenState();
+  State<AssignmentDetailsScreen> createState() =>
+      _AssignmentDetailsScreenState();
 }
 
 class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
   final FuelCardService _fuelCardService = FuelCardService();
   List<FuelTransaction> _transactions = [];
+  FuelCard? _fuelCard;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadTransactions();
+    _loadData();
   }
 
-  Future<void> _loadTransactions() async {
+  Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final transactions = await _fuelCardService.getFuelTransactions(
-        cardId: widget.assignment.fuelCardId,
+      // Load transactions
+      final transactions = await _fuelCardService.getAllTransactions(
+        fuelCardId: widget.assignment.fuelCardId,
       );
+
+      // Load fuel card details
+      final cards = await _fuelCardService.getAllCards();
+      final card = cards.firstWhere(
+        (card) => card.id == widget.assignment.fuelCardId,
+      );
+
       setState(() {
         _transactions = transactions;
+        _fuelCard = card;
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading transactions: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading data: $e')));
     }
   }
 
@@ -50,10 +61,7 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadTransactions,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
         ],
       ),
       body: ResponsiveLayout(
@@ -135,24 +143,27 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
           children: [
             Text(
               'Assignment Information',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildInfoRow('Status', widget.assignment.status.toUpperCase()),
-            _buildInfoRow('Assigned Date', 
-              DateFormat('MMM dd, yyyy HH:mm').format(widget.assignment.assignedAt)),
-            if (widget.assignment.pickupLocation != null)
-              _buildInfoRow('Pickup Location', widget.assignment.pickupLocation!),
-            if (widget.assignment.pickupCode != null)
-              _buildInfoRow('Pickup Code', widget.assignment.pickupCode!),
-            if (widget.assignment.expectedConsumption != null)
-              _buildInfoRow('Expected Consumption', 
-                '${widget.assignment.expectedConsumption!.toStringAsFixed(1)}L'),
-            if (widget.assignment.actualConsumption != null)
-              _buildInfoRow('Actual Consumption', 
-                '${widget.assignment.actualConsumption!.toStringAsFixed(1)}L'),
+            _buildInfoRow(
+              'Assigned Date',
+              DateFormat(
+                'MMM dd, yyyy HH:mm',
+              ).format(widget.assignment.assignedDate),
+            ),
+            if (widget.assignment.unassignedDate != null)
+              _buildInfoRow(
+                'Unassigned Date',
+                DateFormat(
+                  'MMM dd, yyyy HH:mm',
+                ).format(widget.assignment.unassignedDate!),
+              ),
+            _buildInfoRow('Assigned By', widget.assignment.assignedBy),
+            if (widget.assignment.notes != null)
+              _buildInfoRow('Notes', widget.assignment.notes!),
           ],
         ),
       ),
@@ -160,8 +171,14 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
   }
 
   Widget _buildCardInfo() {
-    final card = widget.assignment.fuelCard;
-    if (card == null) return const SizedBox();
+    if (_fuelCard == null) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
 
     return Card(
       child: Padding(
@@ -171,9 +188,9 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
           children: [
             Text(
               'Fuel Card Information',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Container(
@@ -194,7 +211,7 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    card.cardType.toUpperCase(),
+                    _fuelCard!.cardType.name.toUpperCase(),
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 12,
@@ -203,7 +220,7 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '**** **** **** ${card.cardNumber.substring(card.cardNumber.length - 4)}',
+                    '**** **** **** ${_fuelCard!.cardNumber.substring(_fuelCard!.cardNumber.length - 4)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -227,7 +244,7 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
                             ),
                           ),
                           Text(
-                            '\$${card.currentBalance.toStringAsFixed(2)}',
+                            '\$${_fuelCard!.currentBalance.toStringAsFixed(2)}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -248,7 +265,7 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
                             ),
                           ),
                           Text(
-                            '\$${card.spendingLimit.toStringAsFixed(2)}',
+                            '\$${_fuelCard!.spendingLimit.toStringAsFixed(2)}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
@@ -265,15 +282,18 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
-              children: card.allowedFuelTypes.map((type) {
-                return Chip(
-                  label: Text(
-                    type.toUpperCase(),
-                    style: const TextStyle(fontSize: 10),
-                  ),
-                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                );
-              }).toList(),
+              children:
+                  _fuelCard!.fuelTypeRestrictions.map((type) {
+                    return Chip(
+                      label: Text(
+                        type.toUpperCase(),
+                        style: const TextStyle(fontSize: 10),
+                      ),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).primaryColor.withOpacity(0.1),
+                    );
+                  }).toList(),
             ),
           ],
         ),
@@ -300,10 +320,7 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
                 if (_transactions.isNotEmpty)
                   Text(
                     '${_transactions.length} transactions',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
               ],
             ),
@@ -337,10 +354,12 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
   Widget _buildTransactionTile(FuelTransaction transaction) {
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: _getFuelTypeColor(transaction.fuelType).withOpacity(0.1),
+        backgroundColor: _getTransactionTypeColor(
+          transaction.type,
+        ).withOpacity(0.1),
         child: Icon(
-          Icons.local_gas_station,
-          color: _getFuelTypeColor(transaction.fuelType),
+          _getTransactionTypeIcon(transaction.type),
+          color: _getTransactionTypeColor(transaction.type),
         ),
       ),
       title: Text(
@@ -350,15 +369,18 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('${transaction.fuelType.toUpperCase()} • ${transaction.liters?.toStringAsFixed(1) ?? 'N/A'}L'),
-          Text(transaction.stationName ?? 'Unknown Station'),
-          Text(DateFormat('MMM dd, yyyy HH:mm').format(transaction.transactionDate)),
+          Text(
+            '${transaction.type.name.toUpperCase()} • ${transaction.quantity.toStringAsFixed(1)}L',
+          ),
+          Text(transaction.station),
+          Text(
+            DateFormat(
+              'MMM dd, yyyy HH:mm',
+            ).format(transaction.transactionDate),
+          ),
         ],
       ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: Colors.grey[400],
-      ),
+      trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
     );
   }
 
@@ -372,18 +394,13 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
             width: 120,
             child: Text(
               label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -391,19 +408,29 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen> {
     );
   }
 
-  Color _getFuelTypeColor(String fuelType) {
-    switch (fuelType.toLowerCase()) {
-      case 'diesel':
+  Color _getTransactionTypeColor(TransactionType type) {
+    switch (type) {
+      case TransactionType.fuel:
         return Colors.orange;
-      case 'petrol':
-      case 'gasoline':
+      case TransactionType.carWash:
         return Colors.blue;
-      case 'electric':
+      case TransactionType.convenience:
         return Colors.green;
-      case 'hybrid':
+      case TransactionType.maintenance:
         return Colors.purple;
-      default:
-        return Colors.grey;
+    }
+  }
+
+  IconData _getTransactionTypeIcon(TransactionType type) {
+    switch (type) {
+      case TransactionType.fuel:
+        return Icons.local_gas_station;
+      case TransactionType.carWash:
+        return Icons.car_crash;
+      case TransactionType.convenience:
+        return Icons.shopping_cart;
+      case TransactionType.maintenance:
+        return Icons.build;
     }
   }
 }

@@ -4,7 +4,7 @@ import 'package:logistics/screens/client/client_dashboard.dart';
 import 'package:logistics/screens/driver/driver_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();

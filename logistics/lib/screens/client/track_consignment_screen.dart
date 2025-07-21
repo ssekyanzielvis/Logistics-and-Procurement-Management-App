@@ -185,7 +185,7 @@ class _TrackConsignmentScreenState extends State<TrackConsignmentScreen> {
                   const SizedBox(height: 12),
                   _buildInfoRow(
                     'Tracking ID',
-                    _consignment!.id.substring(0, 8) + '...',
+                    '${_consignment!.id.substring(0, 8)}...',
                   ),
                   _buildInfoRow('Item', _consignment!.itemDescription),
                   _buildInfoRow('Weight', '${_consignment!.weight} kg'),

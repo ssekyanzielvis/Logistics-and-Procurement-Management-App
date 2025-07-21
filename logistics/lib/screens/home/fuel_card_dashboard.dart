@@ -8,7 +8,7 @@ import '../home/fuel_card_list.dart';
 import '../home/recent_transactions.dart';
 
 class FuelCardDashboard extends ConsumerStatefulWidget {
-  const FuelCardDashboard({Key? key}) : super(key: key);
+  const FuelCardDashboard({super.key});
 
   @override
   ConsumerState<FuelCardDashboard> createState() => _FuelCardDashboardState();
@@ -29,9 +29,9 @@ class _FuelCardDashboardState extends ConsumerState<FuelCardDashboard> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final cards = await _fuelCardService.getFuelCards();
-      final transactions = await _fuelCardService.getFuelTransactions();
-      
+      final cards = await _fuelCardService.getAllCards();
+      final transactions = await _fuelCardService.getAllTransactions();
+
       setState(() {
         _fuelCards = cards;
         _recentTransactions = transactions.take(10).toList();
@@ -40,7 +40,7 @@ class _FuelCardDashboardState extends ConsumerState<FuelCardDashboard> {
     } catch (e) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading data: $e')),
+        SnackBar(content: Text('Error loading data: ${e.toString()}')),
       );
     }
   }
@@ -57,19 +57,17 @@ class _FuelCardDashboardState extends ConsumerState<FuelCardDashboard> {
             icon: const Icon(Icons.add),
             onPressed: () => _showCreateFuelCardDialog(),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ResponsiveLayout(
-              mobile: _buildMobileLayout(),
-              tablet: _buildTabletLayout(),
-              desktop: _buildDesktopLayout(),
-            ),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ResponsiveLayout(
+                mobile: _buildMobileLayout(),
+                tablet: _buildTabletLayout(),
+                desktop: _buildDesktopLayout(),
+              ),
     );
   }
 
@@ -177,9 +175,9 @@ class _FuelCardDashboardState extends ConsumerState<FuelCardDashboard> {
           children: [
             Text(
               'Quick Actions',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             ResponsiveLayout(
@@ -198,17 +196,37 @@ class _FuelCardDashboardState extends ConsumerState<FuelCardDashboard> {
       children: [
         Row(
           children: [
-            Expanded(child: _buildActionButton('Create Card', Icons.add_card, _showCreateFuelCardDialog)),
+            Expanded(
+              child: _buildActionButton(
+                'Create Card',
+                Icons.add_card,
+                _showCreateFuelCardDialog,
+              ),
+            ),
             const SizedBox(width: 8),
-            Expanded(child: _buildActionButton('Assign Card', Icons.assignment, _showAssignCardDialog)),
+            Expanded(
+              child: _buildActionButton(
+                'Assign Card',
+                Icons.assignment,
+                _showAssignCardDialog,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(child: _buildActionButton('View Reports', Icons.analytics, _showReports)),
+            Expanded(
+              child: _buildActionButton(
+                'View Reports',
+                Icons.analytics,
+                _showReports,
+              ),
+            ),
             const SizedBox(width: 8),
-            Expanded(child: _buildActionButton('Lockers', Icons.locker, _showLockers)),
+            Expanded(
+              child: _buildActionButton('Lockers', Icons.lock, _showLockers),
+            ),
           ],
         ),
       ],
@@ -218,13 +236,33 @@ class _FuelCardDashboardState extends ConsumerState<FuelCardDashboard> {
   Widget _buildTabletQuickActions() {
     return Row(
       children: [
-        Expanded(child: _buildActionButton('Create Card', Icons.add_card, _showCreateFuelCardDialog)),
+        Expanded(
+          child: _buildActionButton(
+            'Create Card',
+            Icons.add_card,
+            _showCreateFuelCardDialog,
+          ),
+        ),
         const SizedBox(width: 12),
-        Expanded(child: _buildActionButton('Assign Card', Icons.assignment, _showAssignCardDialog)),
+        Expanded(
+          child: _buildActionButton(
+            'Assign Card',
+            Icons.assignment,
+            _showAssignCardDialog,
+          ),
+        ),
         const SizedBox(width: 12),
-        Expanded(child: _buildActionButton('View Reports', Icons.analytics, _showReports)),
+        Expanded(
+          child: _buildActionButton(
+            'View Reports',
+            Icons.analytics,
+            _showReports,
+          ),
+        ),
         const SizedBox(width: 12),
-        Expanded(child: _buildActionButton('Lockers', Icons.locker, _showLockers)),
+        Expanded(
+          child: _buildActionButton('Lockers', Icons.lock, _showLockers),
+        ),
       ],
     );
   }
@@ -232,18 +270,30 @@ class _FuelCardDashboardState extends ConsumerState<FuelCardDashboard> {
   Widget _buildDesktopQuickActions() {
     return Row(
       children: [
-        _buildActionButton('Create Card', Icons.add_card, _showCreateFuelCardDialog),
+        _buildActionButton(
+          'Create Card',
+          Icons.add_card,
+          _showCreateFuelCardDialog,
+        ),
         const SizedBox(width: 16),
-        _buildActionButton('Assign Card', Icons.assignment, _showAssignCardDialog),
+        _buildActionButton(
+          'Assign Card',
+          Icons.assignment,
+          _showAssignCardDialog,
+        ),
         const SizedBox(width: 16),
         _buildActionButton('View Reports', Icons.analytics, _showReports),
         const SizedBox(width: 16),
-        _buildActionButton('Lockers', Icons.locker, _showLockers),
+        _buildActionButton('Lockers', Icons.lock, _showLockers),
       ],
     );
   }
 
-  Widget _buildActionButton(String label, IconData icon, VoidCallback onPressed) {
+  Widget _buildActionButton(
+    String label,
+    IconData icon,
+    VoidCallback onPressed,
+  ) {
     return ElevatedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 18),
@@ -274,7 +324,7 @@ class _FuelCardDashboardState extends ConsumerState<FuelCardDashboard> {
     Navigator.pushNamed(context, '/fuel-card/details', arguments: card);
   }
 
-  Future<void> _updateCardStatus(String cardId, String status) async {
+  Future<void> _updateCardStatus(String cardId, FuelCardStatus status) async {
     try {
       await _fuelCardService.updateFuelCardStatus(cardId, status);
       _loadData();
@@ -283,7 +333,7 @@ class _FuelCardDashboardState extends ConsumerState<FuelCardDashboard> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating card status: $e')),
+        SnackBar(content: Text('Error updating card status: ${e.toString()}')),
       );
     }
   }

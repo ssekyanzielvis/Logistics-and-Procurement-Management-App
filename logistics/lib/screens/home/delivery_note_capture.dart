@@ -1,9 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:logistics/services/delivery_note_service.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../services/delivery_note_service.dart';
-import '../models/delivery_note.dart';
 
 class DeliveryNoteCapture extends StatefulWidget {
   final String driverId;
@@ -13,13 +12,13 @@ class DeliveryNoteCapture extends StatefulWidget {
   final VoidCallback? onDeliveryCompleted;
 
   const DeliveryNoteCapture({
-    Key? key,
+    super.key,
     required this.driverId,
     required this.customerId,
     required this.customerName,
     required this.deliveryAddress,
     this.onDeliveryCompleted,
-  }) : super(key: key);
+  });
 
   @override
   State<DeliveryNoteCapture> createState() => _DeliveryNoteCaptureState();
@@ -29,7 +28,7 @@ class _DeliveryNoteCaptureState extends State<DeliveryNoteCapture> {
   final ImagePicker _picker = ImagePicker();
   final DeliveryNoteService _deliveryService = DeliveryNoteService();
   final TextEditingController _notesController = TextEditingController();
-  
+
   File? _selectedImage;
   bool _isLoading = false;
 
@@ -40,17 +39,13 @@ class _DeliveryNoteCaptureState extends State<DeliveryNoteCapture> {
   }
 
   Future<void> _requestPermissions() async {
-    await [
-      Permission.camera,
-      Permission.storage,
-      Permission.photos,
-    ].request();
+    await [Permission.camera, Permission.storage, Permission.photos].request();
   }
 
   Future<void> _pickImage(ImageSource source) async {
     try {
       await _requestPermissions();
-      
+
       final XFile? image = await _picker.pickImage(
         source: source,
         maxWidth: 1920,
@@ -85,9 +80,10 @@ class _DeliveryNoteCaptureState extends State<DeliveryNoteCapture> {
         customerName: widget.customerName,
         deliveryAddress: widget.deliveryAddress,
         imageFile: _selectedImage!,
-        notes: _notesController.text.trim().isEmpty 
-            ? null 
-            : _notesController.text.trim(),
+        notes:
+            _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
       );
 
       if (mounted) {
@@ -231,18 +227,18 @@ class _DeliveryNoteCaptureState extends State<DeliveryNoteCapture> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Image Capture Section
             Text(
               'Delivery Proof',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            
+
             Container(
               width: double.infinity,
               height: 250,
@@ -250,57 +246,53 @@ class _DeliveryNoteCaptureState extends State<DeliveryNoteCapture> {
                 border: Border.all(color: Colors.grey[300]!),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: _selectedImage != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        _selectedImage!,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.image,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No image selected',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 16,
+              child:
+                  _selectedImage != null
+                      ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(_selectedImage!, fit: BoxFit.cover),
+                      )
+                      : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.image, size: 64, color: Colors.grey[400]),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No image selected',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 16,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Image Selection Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: _showImageSourceDialog,
                 icon: const Icon(Icons.add_a_photo),
-                label: Text(_selectedImage != null ? 'Change Image' : 'Add Image'),
+                label: Text(
+                  _selectedImage != null ? 'Change Image' : 'Add Image',
+                ),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Notes Section
             Text(
               'Additional Notes (Optional)',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -311,9 +303,9 @@ class _DeliveryNoteCaptureState extends State<DeliveryNoteCapture> {
                 border: OutlineInputBorder(),
               ),
             ),
-            
+
             const SizedBox(height: 30),
-            
+
             // Save Button
             SizedBox(
               width: double.infinity,
@@ -322,26 +314,29 @@ class _DeliveryNoteCaptureState extends State<DeliveryNoteCapture> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green[600],
                   foregroundColor: Colors.white,
-                                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: const TextStyle(fontSize: 18),
                 ),
-                child: _isLoading
-                    ? const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                child:
+                    _isLoading
+                        ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 12),
-                          Text('Saving...'),
-                        ],
-                      )
-                    : const Text('Complete Delivery'),
+                            SizedBox(width: 12),
+                            Text('Saving...'),
+                          ],
+                        )
+                        : const Text('Complete Delivery'),
               ),
             ),
           ],
@@ -350,4 +345,3 @@ class _DeliveryNoteCaptureState extends State<DeliveryNoteCapture> {
     );
   }
 }
-

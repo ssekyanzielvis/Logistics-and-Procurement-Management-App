@@ -4,6 +4,8 @@ import '../../models/chat_models.dart';
 import '../../services/chat_service.dart';
 
 class UserSelectionScreen extends StatefulWidget {
+  const UserSelectionScreen({super.key});
+
   @override
   _UserSelectionScreenState createState() => _UserSelectionScreenState();
 }

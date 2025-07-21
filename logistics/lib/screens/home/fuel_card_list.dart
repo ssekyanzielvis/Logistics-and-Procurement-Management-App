@@ -5,14 +5,14 @@ import '../home/responsive_layout.dart';
 class FuelCardList extends StatelessWidget {
   final List<FuelCard> fuelCards;
   final Function(FuelCard) onCardTap;
-  final Function(String, String) onStatusChange;
+  final Function(String, FuelCardStatus) onStatusChange;
 
   const FuelCardList({
-    Key? key,
+    super.key,
     required this.fuelCards,
     required this.onCardTap,
     required this.onStatusChange,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +110,9 @@ class FuelCardList extends StatelessWidget {
       leading: CircleAvatar(
         backgroundColor: _getStatusColor(card.status).withOpacity(0.1),
         child: Icon(
-          card.cardType == 'digital' ? Icons.smartphone : Icons.credit_card,
+          card.cardType == CardType.virtual
+              ? Icons.smartphone
+              : Icons.credit_card,
           color: _getStatusColor(card.status),
         ),
       ),
@@ -122,20 +124,30 @@ class FuelCardList extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Balance: \$${card.currentBalance.toStringAsFixed(2)}'),
-          Text('Type: ${card.cardType.toUpperCase()}'),
+          Text('Type: ${_formatEnum(card.cardType)}'),
         ],
       ),
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _buildStatusChip(card.status),
-          PopupMenuButton<String>(
+          PopupMenuButton<FuelCardStatus>(
             onSelected: (status) => onStatusChange(card.id, status),
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'active', child: Text('Activate')),
-              const PopupMenuItem(value: 'deactivated', child: Text('Deactivate')),
-              const PopupMenuItem(value: 'available', child: Text('Make Available')),
-            ],
+            itemBuilder:
+                (context) => [
+                  const PopupMenuItem(
+                    value: FuelCardStatus.active,
+                    child: Text('Activate'),
+                  ),
+                  const PopupMenuItem(
+                    value: FuelCardStatus.inactive,
+                    child: Text('Deactivate'),
+                  ),
+                  const PopupMenuItem(
+                    value: FuelCardStatus.blocked,
+                    child: Text('Block'),
+                  ),
+                ],
             child: const Icon(Icons.more_vert),
           ),
         ],
@@ -149,7 +161,9 @@ class FuelCardList extends StatelessWidget {
       leading: CircleAvatar(
         backgroundColor: _getStatusColor(card.status).withOpacity(0.1),
         child: Icon(
-          card.cardType == 'digital' ? Icons.smartphone : Icons.credit_card,
+          card.cardType == CardType.virtual
+              ? Icons.smartphone
+              : Icons.credit_card,
           color: _getStatusColor(card.status),
         ),
       ),
@@ -163,7 +177,7 @@ class FuelCardList extends StatelessWidget {
           const SizedBox(width: 16),
           Text('Limit: \$${card.spendingLimit.toStringAsFixed(2)}'),
           const SizedBox(width: 16),
-          Text('Type: ${card.cardType.toUpperCase()}'),
+          Text('Type: ${_formatEnum(card.cardType)}'),
         ],
       ),
       trailing: Row(
@@ -171,13 +185,23 @@ class FuelCardList extends StatelessWidget {
         children: [
           _buildStatusChip(card.status),
           const SizedBox(width: 8),
-          PopupMenuButton<String>(
+          PopupMenuButton<FuelCardStatus>(
             onSelected: (status) => onStatusChange(card.id, status),
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'active', child: Text('Activate')),
-              const PopupMenuItem(value: 'deactivated', child: Text('Deactivate')),
-              const PopupMenuItem(value: 'available', child: Text('Make Available')),
-            ],
+            itemBuilder:
+                (context) => [
+                  const PopupMenuItem(
+                    value: FuelCardStatus.active,
+                    child: Text('Activate'),
+                  ),
+                  const PopupMenuItem(
+                    value: FuelCardStatus.inactive,
+                    child: Text('Deactivate'),
+                  ),
+                  const PopupMenuItem(
+                    value: FuelCardStatus.blocked,
+                    child: Text('Block'),
+                  ),
+                ],
             child: const Icon(Icons.more_vert),
           ),
         ],
@@ -191,12 +215,42 @@ class FuelCardList extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          const Expanded(flex: 2, child: Text('Card Number', style: TextStyle(fontWeight: FontWeight.bold))),
-          const Expanded(flex: 1, child: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
-          const Expanded(flex: 1, child: Text('Balance', style: TextStyle(fontWeight: FontWeight.bold))),
-          const Expanded(flex: 1, child: Text('Limit', style: TextStyle(fontWeight: FontWeight.bold))),
-          const Expanded(flex: 1, child: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-          const Expanded(flex: 1, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+          const Expanded(
+            flex: 2,
+            child: Text(
+              'Card Number',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const Expanded(
+            flex: 1,
+            child: Text('Type', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const Expanded(
+            flex: 1,
+            child: Text(
+              'Balance',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const Expanded(
+            flex: 1,
+            child: Text('Limit', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const Expanded(
+            flex: 1,
+            child: Text(
+              'Status',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const Expanded(
+            flex: 1,
+            child: Text(
+              'Actions',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
         ],
       ),
     );
@@ -214,7 +268,9 @@ class FuelCardList extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(
-                    card.cardType == 'digital' ? Icons.smartphone : Icons.credit_card,
+                    card.cardType == CardType.virtual
+                        ? Icons.smartphone
+                        : Icons.credit_card,
                     color: _getStatusColor(card.status),
                     size: 20,
                   ),
@@ -226,10 +282,7 @@ class FuelCardList extends StatelessWidget {
                 ],
               ),
             ),
-            Expanded(
-              flex: 1,
-              child: Text(card.cardType.toUpperCase()),
-            ),
+            Expanded(flex: 1, child: Text(_formatEnum(card.cardType))),
             Expanded(
               flex: 1,
               child: Text('\$${card.currentBalance.toStringAsFixed(2)}'),
@@ -238,10 +291,7 @@ class FuelCardList extends StatelessWidget {
               flex: 1,
               child: Text('\$${card.spendingLimit.toStringAsFixed(2)}'),
             ),
-            Expanded(
-              flex: 1,
-              child: _buildStatusChip(card.status),
-            ),
+            Expanded(flex: 1, child: _buildStatusChip(card.status)),
             Expanded(
               flex: 1,
               child: Row(
@@ -251,13 +301,23 @@ class FuelCardList extends StatelessWidget {
                     onPressed: () => onCardTap(card),
                     tooltip: 'Edit Card',
                   ),
-                  PopupMenuButton<String>(
+                  PopupMenuButton<FuelCardStatus>(
                     onSelected: (status) => onStatusChange(card.id, status),
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(value: 'active', child: Text('Activate')),
-                      const PopupMenuItem(value: 'deactivated', child: Text('Deactivate')),
-                      const PopupMenuItem(value: 'available', child: Text('Make Available')),
-                    ],
+                    itemBuilder:
+                        (context) => [
+                          const PopupMenuItem(
+                            value: FuelCardStatus.active,
+                            child: Text('Activate'),
+                          ),
+                          const PopupMenuItem(
+                            value: FuelCardStatus.inactive,
+                            child: Text('Deactivate'),
+                          ),
+                          const PopupMenuItem(
+                            value: FuelCardStatus.blocked,
+                            child: Text('Block'),
+                          ),
+                        ],
                     child: const Icon(Icons.more_vert, size: 18),
                   ),
                 ],
@@ -269,7 +329,7 @@ class FuelCardList extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusChip(String status) {
+  Widget _buildStatusChip(FuelCardStatus status) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -278,7 +338,7 @@ class FuelCardList extends StatelessWidget {
         border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
       ),
       child: Text(
-        status.toUpperCase(),
+        _formatEnum(status),
         style: TextStyle(
           color: _getStatusColor(status),
           fontSize: 10,
@@ -288,18 +348,20 @@ class FuelCardList extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
+  Color _getStatusColor(FuelCardStatus status) {
+    switch (status) {
+      case FuelCardStatus.active:
         return Colors.green;
-      case 'assigned':
+      case FuelCardStatus.inactive:
         return Colors.orange;
-      case 'available':
-        return Colors.blue;
-      case 'deactivated':
+      case FuelCardStatus.blocked:
         return Colors.red;
-      default:
+      case FuelCardStatus.expired:
         return Colors.grey;
     }
+  }
+
+  String _formatEnum(dynamic enumValue) {
+    return enumValue.toString().split('.').last.toUpperCase();
   }
 }
