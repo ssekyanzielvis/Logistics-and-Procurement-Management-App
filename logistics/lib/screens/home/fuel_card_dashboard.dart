@@ -8,7 +8,7 @@ import '../home/fuel_card_list.dart';
 import '../home/recent_transactions.dart';
 
 class FuelCardDashboard extends ConsumerStatefulWidget {
-  const FuelCardDashboard({super.key});
+  const FuelCardDashboard({super.key, required String driverId});
 
   @override
   ConsumerState<FuelCardDashboard> createState() => _FuelCardDashboardState();

@@ -133,28 +133,28 @@ class DriverHomeScreen extends StatelessWidget {
                 _buildStatCard(
                   context,
                   'Available Jobs',
-                  '5',
+                  '5', // Replace with dynamic data if needed
                   Icons.local_shipping,
                   Colors.blue,
                 ),
                 _buildStatCard(
                   context,
                   'My Deliveries',
-                  '3',
+                  '3', // Replace with dynamic data if needed
                   Icons.assignment,
                   Colors.orange,
                 ),
                 _buildStatCard(
                   context,
                   'Completed Today',
-                  '2',
+                  '2', // Replace with dynamic data if needed
                   Icons.check_circle,
                   Colors.green,
                 ),
                 _buildStatCard(
                   context,
                   'Earnings Today',
-                  '\$120',
+                  '\$120', // Replace with dynamic data if needed
                   Icons.attach_money,
                   Colors.purple,
                 ),
@@ -169,13 +169,11 @@ class DriverHomeScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder:
-                            (context) =>
-                                DriverFuelCardScreen(driverId: user!.id),
+                            (context) => DriverFuelCardScreen(driverId: ''),
                       ),
                     );
                   },
                 ),
-                // New Delivery Screen Card
                 _buildStatCard(
                   context,
                   'Start Delivery',
@@ -187,7 +185,7 @@ class DriverHomeScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder:
-                            (context) => DeliveryScreen(driverId: user!.id),
+                            (context) => const DeliveryScreen(driverId: ''),
                       ),
                     );
                   },
@@ -204,7 +202,9 @@ class DriverHomeScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ChatListScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const ChatListScreen(),
+                  ),
                 );
               },
               icon: const Icon(Icons.chat),

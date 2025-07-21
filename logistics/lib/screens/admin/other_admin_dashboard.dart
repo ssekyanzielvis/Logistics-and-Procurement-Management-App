@@ -271,7 +271,7 @@ class OtherAdminHomeScreen extends StatelessWidget {
                   () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => FuelCardDashboard(),
+                      builder: (context) => FuelCardDashboard(driverId: ''),
                     ),
                   ),
                   iconSize,
