@@ -2,12 +2,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logistics/screens/home/error_handler.dart';
-import '../services/backup_service.dart';
-import '../services/export_service.dart';
-
-// ignore: library_prefixes
-import '../screens/home/date_utils.dart' as CustomDateUtils;
-import '../providers/fuel_card_providers.dart';
+import '../../services/backup_service.dart';
+import '../../services/export_service.dart';
+import '../../screens/home/date_utils.dart' as CustomDateUtils;
+import '../../providers/fuel_card_providers.dart';
+import '../../providers/settings_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -17,30 +16,105 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  bool _notificationsEnabled = true;
-  bool _biometricEnabled = false;
-  bool _autoBackupEnabled = true;
-  String _selectedTheme = 'system';
-  String _selectedCurrency = 'USD';
-
   @override
   Widget build(BuildContext context) {
+    final settings = ref.watch(settingsProvider);
+    final settingsNotifier = ref.read(settingsProvider.notifier);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Settings'), elevation: 0),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _buildSectionHeader('Appearance'),
+          _buildSettingsTile(
+            icon: Icons.palette,
+            title: 'Theme',
+            subtitle: 'Choose app appearance',
+            trailing: DropdownButton<ThemeMode>(
+              value: settings.themeMode,
+              underline: const SizedBox(),
+              items: const [
+                DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
+                DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+                DropdownMenuItem(
+                  value: ThemeMode.system,
+                  child: Text('System'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  settingsNotifier.updateThemeMode(value);
+                }
+              },
+            ),
+          ),
+          _buildSettingsTile(
+            icon: Icons.color_lens,
+            title: 'Primary Color',
+            subtitle: 'Choose app primary color',
+            onTap: () => _showColorPicker(context, settingsNotifier),
+          ),
+          _buildSettingsTile(
+            icon: Icons.attach_money,
+            title: 'Currency',
+            subtitle: 'Default currency display',
+            trailing: DropdownButton<String>(
+              value: settings.currency,
+              underline: const SizedBox(),
+              items: const [
+                DropdownMenuItem(value: 'USD', child: Text('USD')),
+                DropdownMenuItem(value: 'EUR', child: Text('EUR')),
+                DropdownMenuItem(value: 'GBP', child: Text('GBP')),
+                DropdownMenuItem(value: 'JPY', child: Text('JPY')),
+                DropdownMenuItem(value: 'CAD', child: Text('CAD')),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  settingsNotifier.updateCurrency(value);
+                }
+              },
+            ),
+          ),
+
+          _buildSettingsTile(
+            icon: Icons.date_range,
+            title: 'Date Format',
+            subtitle: 'Choose date display format',
+            trailing: DropdownButton<String>(
+              value: settings.dateFormat,
+              underline: const SizedBox(),
+              items: const [
+                DropdownMenuItem(
+                  value: 'dd/MM/yyyy',
+                  child: Text('DD/MM/YYYY'),
+                ),
+                DropdownMenuItem(
+                  value: 'MM/dd/yyyy',
+                  child: Text('MM/DD/YYYY'),
+                ),
+                DropdownMenuItem(
+                  value: 'yyyy-MM-dd',
+                  child: Text('YYYY-MM-DD'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  settingsNotifier.updateDateFormat(value);
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 24),
           _buildSectionHeader('General'),
           _buildSettingsTile(
             icon: Icons.notifications,
             title: 'Notifications',
             subtitle: 'Enable push notifications',
             trailing: Switch(
-              value: _notificationsEnabled,
+              value: settings.notificationsEnabled,
               onChanged: (value) {
-                setState(() {
-                  _notificationsEnabled = value;
-                });
+                settingsNotifier.updateNotifications(value);
               },
             ),
           ),
@@ -49,57 +123,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Biometric Authentication',
             subtitle: 'Use fingerprint or face ID',
             trailing: Switch(
-              value: _biometricEnabled,
+              value: settings.biometricEnabled,
               onChanged: (value) {
-                setState(() {
-                  _biometricEnabled = value;
-                });
+                settingsNotifier.updateBiometric(value);
               },
             ),
           ),
           _buildSettingsTile(
-            icon: Icons.palette,
-            title: 'Theme',
-            subtitle: 'Choose app appearance',
-            trailing: DropdownButton<String>(
-              value: _selectedTheme,
-              underline: const SizedBox(),
-              items: const [
-                DropdownMenuItem(value: 'light', child: Text('Light')),
-                DropdownMenuItem(value: 'dark', child: Text('Dark')),
-                DropdownMenuItem(value: 'system', child: Text('System')),
-              ],
+            icon: Icons.volume_up,
+            title: 'Sound Effects',
+            subtitle: 'Enable app sounds',
+            trailing: Switch(
+              value: settings.soundEnabled,
               onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedTheme = value;
-                  });
-                }
+                settingsNotifier.updateSoundEnabled(value);
               },
             ),
           ),
-          _buildSettingsTile(
-            icon: Icons.attach_money,
-            title: 'Currency',
-            subtitle: 'Default currency display',
-            trailing: DropdownButton<String>(
-              value: _selectedCurrency,
-              underline: const SizedBox(),
-              items: const [
-                DropdownMenuItem(value: 'USD', child: Text('USD')),
-                DropdownMenuItem(value: 'EUR', child: Text('EUR')),
-                DropdownMenuItem(value: 'GBP', child: Text('GBP')),
-              ],
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedCurrency = value;
-                  });
-                }
-              },
-            ),
-          ),
-
           const SizedBox(height: 24),
           _buildSectionHeader('Data Management'),
           _buildSettingsTile(
@@ -107,11 +147,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Auto Backup',
             subtitle: 'Automatically backup data',
             trailing: Switch(
-              value: _autoBackupEnabled,
+              value: settings.autoBackupEnabled,
               onChanged: (value) {
-                setState(() {
-                  _autoBackupEnabled = value;
-                });
+                settingsNotifier.updateAutoBackup(value);
               },
             ),
           ),
@@ -133,7 +171,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: 'Export transactions and cards',
             onTap: _showExportDialog,
           ),
-
           const SizedBox(height: 24),
           _buildSectionHeader('Security'),
           _buildSettingsTile(
@@ -150,7 +187,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // Navigate to security settings
             },
           ),
-
           const SizedBox(height: 24),
           _buildSectionHeader('Support'),
           _buildSettingsTile(
@@ -167,7 +203,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: 'App version and information',
             onTap: _showAboutDialog,
           ),
-
           const SizedBox(height: 32),
           ElevatedButton(
             onPressed: _showResetDialog,
@@ -214,6 +249,66 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             (onTap != null ? const Icon(Icons.chevron_right) : null),
         onTap: onTap,
       ),
+    );
+  }
+
+  void _showColorPicker(
+    BuildContext context,
+    SettingsNotifier settingsNotifier,
+  ) {
+    final colors = [
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.purple,
+      Colors.orange,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+      Colors.amber,
+      Colors.cyan,
+    ];
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Choose Primary Color'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: GridView.builder(
+                shrinkWrap: true,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 5,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: colors.length,
+                itemBuilder: (context, index) {
+                  final color = colors[index];
+                  return GestureDetector(
+                    onTap: () {
+                      settingsNotifier.updatePrimaryColor(color);
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.grey, width: 1),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
     );
   }
 
@@ -273,7 +368,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _selectBackupFile() async {
     try {
       final backups = await BackupService().getAvailableBackups();
-
       if (backups.isEmpty) {
         if (mounted) {
           ErrorHandler.showWarning(context, 'No backup files found');
@@ -385,7 +479,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       final transactions = ref.read(fuelTransactionsProvider);
       final file = await ExportService().exportTransactionsToCSV(transactions);
-
       if (mounted) {
         ErrorHandler.showSuccess(
           context,
@@ -403,7 +496,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       final transactions = ref.read(fuelTransactionsProvider);
       final file = await ExportService().exportTransactionsToPDF(transactions);
-
       if (mounted) {
         ErrorHandler.showSuccess(
           context,
@@ -496,6 +588,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const Text('• Driver assignments'),
         const Text('• Locker system integration'),
         const Text('• Analytics and reporting'),
+        const Text('• Customizable themes and settings'),
+        const Text('• Data backup and export'),
       ],
     );
   }
@@ -534,6 +628,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ref.read(fuelTransactionsProvider.notifier).clear();
       ref.read(fuelCardAssignmentsProvider.notifier).clear();
       ref.read(fuelCardLockersProvider.notifier).clear();
+
+      // Reset settings to defaults
+      await ref.read(settingsProvider.notifier).resetToDefaults();
 
       if (mounted) {
         ErrorHandler.showSuccess(context, 'All data has been reset');

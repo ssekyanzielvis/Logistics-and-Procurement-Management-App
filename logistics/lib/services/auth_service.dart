@@ -1,25 +1,36 @@
+// lib/services/auth_service.dart
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService extends ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
   bool _isLoading = false;
+  String? _role;
 
-  // Get current user
+  bool get isLoading => _isLoading;
   User? get currentUser => _supabase.auth.currentUser;
-
-  // Check if user is authenticated
+  String? get role => _role;
   bool get isAuthenticated => currentUser != null;
 
-  // Loading state
-  bool get isLoading => _isLoading;
+  Future<void> initialize() async {
+    _setLoading(true);
+    try {
+      if (currentUser != null) {
+        _role = await getUserRole(currentUser!.id);
+      }
+    } catch (e) {
+      debugPrint('Error initializing auth: $e');
+    } finally {
+      _setLoading(false);
+      notifyListeners();
+    }
+  }
 
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
   }
 
-  // Sign in with email and password using edge function
   Future<String?> signIn(String email, String password) async {
     try {
       _setLoading(true);
@@ -38,7 +49,6 @@ class AuthService extends ChangeNotifier {
       if (session != null && session['access_token'] != null) {
         await _supabase.auth.setSession(session['access_token']);
       } else if (role != null) {
-        // Fallback to direct sign-in if session is missing but role is available
         await signInDirect(email, password);
       }
 
@@ -46,14 +56,13 @@ class AuthService extends ChangeNotifier {
         final fallbackRole = await getUserRole(
           _supabase.auth.currentUser?.id ?? (await _getUserIdFromEmail(email))!,
         );
-        return fallbackRole ?? 'user'; // Default to 'user' if no role found
+        return fallbackRole ?? 'user';
       }
 
       return role;
     } on Exception catch (e) {
       if (e.toString().contains('FunctionException') &&
           e.toString().contains('404')) {
-        // Fallback to direct sign-in if custom_login is not found
         return await signInDirect(email, password);
       }
       throw Exception('Authentication error: ${e.toString()}');
@@ -62,7 +71,6 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // Alternative sign in method using direct Supabase auth
   Future<String?> signInDirect(String email, String password) async {
     try {
       _setLoading(true);
@@ -76,7 +84,7 @@ class AuthService extends ChangeNotifier {
       }
 
       final userRole = await getUserRole(response.user!.id);
-      return userRole ?? 'user'; // Default to 'user' if no role found
+      return userRole ?? 'user';
     } catch (e) {
       throw Exception('Authentication error: ${e.toString()}');
     } finally {
@@ -84,7 +92,6 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // Helper method to get user ID from email (for fallback)
   Future<String?> _getUserIdFromEmail(String email) async {
     try {
       final response =
@@ -100,13 +107,12 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // Sign out
   Future<void> signOut() async {
     await _supabase.auth.signOut();
+    _role = null;
     notifyListeners();
   }
 
-  // Sign up with email and password
   Future<AuthResponse> signUp(
     String email,
     String password, {
@@ -136,8 +142,8 @@ class AuthService extends ChangeNotifier {
           'phone': phone,
           'role': role ?? 'user',
           'profile_image': profileImage,
-          'created_at': DateTime.now().toIso8601String(), // Add this line
-          'updated_at': DateTime.now().toIso8601String(), // Add this line
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
         });
       }
 
@@ -147,18 +153,15 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // Reset password
   Future<void> resetPassword(String email) async {
     await _supabase.auth.resetPasswordForEmail(email);
   }
 
-  // Update user role (admin function)
   Future<void> updateUserRole(String userId, String role) async {
     await _supabase.from('users').update({'role': role}).eq('id', userId);
     notifyListeners();
   }
 
-  // Get user profile
   Future<Map<String, dynamic>?> getUserProfile(String userId) async {
     try {
       final response =
@@ -170,7 +173,6 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // Get user role
   Future<String?> getUserRole(String userId) async {
     try {
       final response =
@@ -186,20 +188,17 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // Check if current user is admin
   Future<bool> isCurrentUserAdmin() async {
     if (currentUser == null) return false;
     final role = await getUserRole(currentUser!.id);
     return role == 'admin' || role == 'other_admin';
   }
 
-  // Get current user profile
   Future<Map<String, dynamic>?> getCurrentUserProfile() async {
     if (currentUser == null) return null;
     return await getUserProfile(currentUser!.id);
   }
 
-  // Update current user profile
   Future<void> updateCurrentUserProfile({
     String? fullName,
     String? phone,
@@ -222,10 +221,11 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // Listen to auth state changes
   void listenToAuthChanges() {
     _supabase.auth.onAuthStateChange.listen((data) {
-      notifyListeners();
+      if (data.session?.user.id != currentUser?.id) {
+        initialize();
+      }
     });
   }
 }
