@@ -5,6 +5,7 @@ import 'package:logistics/screens/client/my_consignments_screen.dart';
 import 'package:logistics/screens/client/track_consignment_screen.dart';
 import 'package:logistics/screens/home/profile_screen.dart';
 import 'package:logistics/services/auth_service.dart';
+import 'package:logistics/services/settings_screen.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
 
@@ -23,6 +24,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
     const CreateConsignmentScreen(),
     const MyConsignmentsScreen(),
     const TrackConsignmentScreen(),
+    const SettingsScreen(), // Added SettingsScreen to the screens list
   ];
 
   @override
@@ -34,7 +36,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.person), // Profile icon
+            icon: const Icon(Icons.person),
             tooltip: 'Profile',
             onPressed: () {
               Navigator.push(
@@ -83,6 +85,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
           BottomNavigationBarItem(
             icon: Icon(Icons.track_changes),
             label: 'Track',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings), // Settings icon
+            label: 'Settings',
           ),
         ],
       ),
@@ -159,8 +165,12 @@ class ClientHomeScreen extends StatelessWidget {
                   Icons.add_box,
                   Colors.green,
                   () {
-                    // Navigate to create consignment
-                    Navigator.pushNamed(context, '/create-consignment');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CreateConsignmentScreen(),
+                      ),
+                    );
                   },
                 ),
                 _buildActionCard(
@@ -168,7 +178,12 @@ class ClientHomeScreen extends StatelessWidget {
                   Icons.track_changes,
                   Colors.blue,
                   () {
-                    // Navigate to track consignment
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TrackConsignmentScreen(),
+                      ),
+                    );
                   },
                 ),
                 _buildActionCard(
@@ -176,7 +191,12 @@ class ClientHomeScreen extends StatelessWidget {
                   Icons.history,
                   Colors.orange,
                   () {
-                    // Navigate to order history
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MyConsignmentsScreen(),
+                      ),
+                    );
                   },
                 ),
                 _buildActionCard(

@@ -6,6 +6,7 @@ import 'package:logistics/screens/client/chat_list_screen.dart';
 import 'package:logistics/screens/home/fuel_card_dashboard.dart';
 import 'package:logistics/screens/home/profile_screen.dart';
 import 'package:logistics/services/auth_service.dart';
+import 'package:logistics/services/settings_screen.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -25,6 +26,7 @@ class _OtherAdminDashboardState extends State<OtherAdminDashboard> {
     const ManageUsersScreen(),
     const ManageConsignmentsScreen(),
     const AnalyticsScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -98,6 +100,10 @@ class _OtherAdminDashboardState extends State<OtherAdminDashboard> {
           BottomNavigationBarItem(
             icon: Icon(Icons.analytics, size: fontScale * 24),
             label: 'Analytics',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings, size: fontScale * 24),
+            label: 'Settings',
           ),
         ],
       ),

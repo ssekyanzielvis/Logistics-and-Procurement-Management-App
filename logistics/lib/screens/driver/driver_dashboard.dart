@@ -6,6 +6,7 @@ import 'package:logistics/screens/home/delivery_screen.dart';
 import 'package:logistics/screens/home/driver_fuel_card_screen.dart';
 import 'package:logistics/screens/home/profile_screen.dart';
 import 'package:logistics/services/auth_service.dart';
+import 'package:logistics/services/settings_screen.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
 
@@ -23,6 +24,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
     const DriverHomeScreen(),
     const AvailableConsignmentsScreen(),
     const MyDeliveriesScreen(),
+    const SettingsScreen(), // Added Settings screen
   ];
 
   @override
@@ -34,18 +36,18 @@ class _DriverDashboardState extends State<DriverDashboard> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.person), // Profile icon
-            tooltip: 'Profile', // Optional tooltip
+            icon: const Icon(Icons.person),
+            tooltip: 'Profile',
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ProfileScreen()),
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
               );
             },
           ),
           IconButton(
             icon: const Icon(Icons.logout),
-            tooltip: 'Logout', // Optional tooltip
+            tooltip: 'Logout',
             onPressed: () {
               Provider.of<AuthService>(context, listen: false).signOut();
             },
@@ -54,6 +56,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
       ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: (index) {
           setState(() {
@@ -71,6 +74,10 @@ class _DriverDashboardState extends State<DriverDashboard> {
           BottomNavigationBarItem(
             icon: Icon(Icons.assignment),
             label: 'My Deliveries',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),
@@ -145,28 +152,28 @@ class DriverHomeScreen extends StatelessWidget {
                 _buildStatCard(
                   context,
                   'Available Jobs',
-                  '5', // Replace with dynamic data if needed
+                  '5',
                   Icons.local_shipping,
                   Colors.blue,
                 ),
                 _buildStatCard(
                   context,
                   'My Deliveries',
-                  '3', // Replace with dynamic data if needed
+                  '3',
                   Icons.assignment,
                   Colors.orange,
                 ),
                 _buildStatCard(
                   context,
                   'Completed Today',
-                  '2', // Replace with dynamic data if needed
+                  '2',
                   Icons.check_circle,
                   Colors.green,
                 ),
                 _buildStatCard(
                   context,
                   'Earnings Today',
-                  '\$120', // Replace with dynamic data if needed
+                  '\$120',
                   Icons.attach_money,
                   Colors.purple,
                 ),
@@ -181,7 +188,8 @@ class DriverHomeScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder:
-                            (context) => DriverFuelCardScreen(driverId: ''),
+                            (context) =>
+                                const DriverFuelCardScreen(driverId: ''),
                       ),
                     );
                   },
