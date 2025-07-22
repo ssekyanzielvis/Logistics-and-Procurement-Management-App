@@ -5,6 +5,7 @@ import 'package:logistics/screens/admin/user_management_screen.dart';
 import 'package:logistics/screens/client/chat_list_screen.dart';
 import 'package:logistics/screens/home/delivery_screen.dart';
 import 'package:logistics/screens/home/fuel_card_dashboard.dart';
+import 'package:logistics/screens/home/profile_screen.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
@@ -40,6 +41,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
         foregroundColor: Colors.white,
         toolbarHeight: toolbarHeight,
         actions: [
+          IconButton(
+            icon: Icon(Icons.person, size: fontScale * 24),
+            tooltip: 'Profile',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ProfileScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.chat, size: fontScale * 24),
             tooltip: 'Chats',

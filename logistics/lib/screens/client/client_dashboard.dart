@@ -3,6 +3,7 @@ import 'package:logistics/screens/client/chat_list_screen.dart';
 import 'package:logistics/screens/client/create_consignment_screen.dart';
 import 'package:logistics/screens/client/my_consignments_screen.dart';
 import 'package:logistics/screens/client/track_consignment_screen.dart';
+import 'package:logistics/screens/home/profile_screen.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:provider/provider.dart';
@@ -32,6 +33,16 @@ class _ClientDashboardState extends State<ClientDashboard> {
         backgroundColor: AppConstants.primaryColor,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person), // Profile icon
+            tooltip: 'Profile',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ProfileScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.chat),
             tooltip: 'Chat',
