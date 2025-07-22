@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logistics/providers/auth_provider.dart';
 import 'package:logistics/screens/admin/analytics_screen.dart';
 import 'package:logistics/screens/admin/consignment_management_screen.dart';
 import 'package:logistics/screens/admin/user_management_screen.dart';
@@ -6,24 +8,26 @@ import 'package:logistics/screens/client/chat_list_screen.dart';
 import 'package:logistics/screens/home/delivery_screen.dart';
 import 'package:logistics/screens/home/fuel_card_dashboard.dart';
 import 'package:logistics/screens/home/profile_screen.dart';
-import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/services/settings_screen.dart';
 import 'package:logistics/utils/constants.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AdminDashboard extends StatefulWidget {
+final dashboardServiceProvider = Provider<DashboardService>((ref) {
+  return DashboardService();
+});
+
+class AdminDashboard extends ConsumerStatefulWidget {
   const AdminDashboard({super.key});
 
   @override
-  State<AdminDashboard> createState() => _AdminDashboardState();
+  ConsumerState<AdminDashboard> createState() => _AdminDashboardState();
 }
 
-class _AdminDashboardState extends State<AdminDashboard> {
+class _AdminDashboardState extends ConsumerState<AdminDashboard> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
-    AdminHomeScreen(),
+    const AdminHomeScreen(),
     const ManageUsersScreen(),
     const ManageConsignmentsScreen(),
     const AnalyticsScreen(),
@@ -35,6 +39,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final screenWidth = MediaQuery.of(context).size.width;
     final fontScale = screenWidth / 400;
     final toolbarHeight = screenWidth * 0.12;
+    final authService = ref.read(authServiceProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -49,7 +54,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ProfileScreen()),
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
               );
             },
           ),
@@ -59,16 +64,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ChatListScreen()),
+                MaterialPageRoute(builder: (context) => const ChatListScreen()),
               );
             },
           ),
           IconButton(
             icon: Icon(Icons.logout, size: fontScale * 24),
             tooltip: 'Logout',
-            onPressed: () {
-              Provider.of<AuthService>(context, listen: false).signOut();
-            },
+            onPressed: () => authService.signOut(),
           ),
         ],
       ),
@@ -76,11 +79,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+        onTap: (index) => setState(() => _selectedIndex = index),
         selectedItemColor: AppConstants.primaryColor,
         unselectedItemColor: Colors.grey,
         selectedFontSize: fontScale * 12,
@@ -112,13 +111,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 }
 
-class AdminHomeScreen extends StatelessWidget {
-  AdminHomeScreen({super.key});
-
-  final DashboardService _dashboardService = DashboardService();
+class AdminHomeScreen extends ConsumerWidget {
+  const AdminHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final cardPadding = screenWidth * 0.03;
@@ -126,6 +123,8 @@ class AdminHomeScreen extends StatelessWidget {
     final valueFontSize = screenWidth * 0.05;
     final titleFontSize = screenWidth * 0.035;
     final childAspectRatio = screenWidth / screenHeight * 2.2;
+    final dashboardService = ref.read(dashboardServiceProvider);
+    final authService = ref.read(authServiceProvider);
 
     return Padding(
       padding: EdgeInsets.all(cardPadding),
@@ -139,56 +138,50 @@ class AdminHomeScreen extends StatelessWidget {
               gradient: LinearGradient(
                 colors: [
                   AppConstants.primaryColor,
-                  AppConstants.primaryColor.withValues(alpha: 0.7),
+                  AppConstants.primaryColor.withOpacity(0.7),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Consumer<AuthService>(
-                  builder: (context, authService, child) {
-                    return FutureBuilder<Map<String, dynamic>?>(
-                      future:
-                          authService.currentUser != null
-                              ? authService.getUserProfile(
-                                authService.currentUser!.id,
-                              )
-                              : null,
-                      builder: (context, snapshot) {
-                        String displayName = 'Administrator';
-                        if (snapshot.hasData && snapshot.data != null) {
-                          displayName =
-                              snapshot.data!['full_name'] ?? 'Administrator';
-                        }
-                        return Text(
-                          'Welcome, $displayName',
-                          style: TextStyle(
-                            fontSize: valueFontSize * 1.2,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        );
-                      },
-                    );
-                  },
-                ),
-                SizedBox(height: cardPadding * 0.5),
-                Text(
-                  'Manage your logistics operations efficiently',
-                  style: TextStyle(
-                    fontSize: titleFontSize,
-                    color: Colors.white70,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ],
+            child: FutureBuilder<Map<String, dynamic>?>(
+              future:
+                  authService.currentUser != null
+                      ? authService.getUserProfile(authService.currentUser!.id)
+                      : null,
+              builder: (context, snapshot) {
+                final displayName =
+                    snapshot.hasData && snapshot.data != null
+                        ? snapshot.data!['full_name'] ?? 'Administrator'
+                        : 'Administrator';
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome, $displayName',
+                      style: TextStyle(
+                        fontSize: valueFontSize * 1.2,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    SizedBox(height: cardPadding * 0.5),
+                    Text(
+                      'Manage your logistics operations efficiently',
+                      style: TextStyle(
+                        fontSize: titleFontSize,
+                        color: Colors.white70,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           SizedBox(height: cardPadding * 1.5),
@@ -210,76 +203,72 @@ class AdminHomeScreen extends StatelessWidget {
               shrinkWrap: true,
               children: [
                 FutureBuilder<int>(
-                  future: _dashboardService.getTotalUsers(),
-                  builder: (context, snapshot) {
-                    return _buildStatCard(
-                      context,
-                      'Total Users',
-                      snapshot.hasData
-                          ? snapshot.data.toString()
-                          : 'Loading...',
-                      Icons.people,
-                      Colors.blue,
-                      iconSize,
-                      valueFontSize,
-                      titleFontSize,
-                      cardPadding,
-                    );
-                  },
+                  future: dashboardService.getTotalUsers(),
+                  builder:
+                      (context, snapshot) => _buildStatCard(
+                        context,
+                        'Total Users',
+                        snapshot.hasData
+                            ? snapshot.data.toString()
+                            : 'Loading...',
+                        Icons.people,
+                        Colors.blue,
+                        iconSize,
+                        valueFontSize,
+                        titleFontSize,
+                        cardPadding,
+                      ),
                 ),
                 FutureBuilder<int>(
-                  future: _dashboardService.getActiveConsignments(),
-                  builder: (context, snapshot) {
-                    return _buildStatCard(
-                      context,
-                      'Active Consignments',
-                      snapshot.hasData
-                          ? snapshot.data.toString()
-                          : 'Loading...',
-                      Icons.local_shipping,
-                      Colors.orange,
-                      iconSize,
-                      valueFontSize,
-                      titleFontSize,
-                      cardPadding,
-                    );
-                  },
+                  future: dashboardService.getActiveConsignments(),
+                  builder:
+                      (context, snapshot) => _buildStatCard(
+                        context,
+                        'Active Consignments',
+                        snapshot.hasData
+                            ? snapshot.data.toString()
+                            : 'Loading...',
+                        Icons.local_shipping,
+                        Colors.orange,
+                        iconSize,
+                        valueFontSize,
+                        titleFontSize,
+                        cardPadding,
+                      ),
                 ),
                 FutureBuilder<int>(
-                  future: _dashboardService.getAvailableDrivers(),
-                  builder: (context, snapshot) {
-                    return _buildStatCard(
-                      context,
-                      'Available Drivers',
-                      snapshot.hasData
-                          ? snapshot.data.toString()
-                          : 'Loading...',
-                      Icons.drive_eta,
-                      Colors.green,
-                      iconSize,
-                      valueFontSize,
-                      titleFontSize,
-                      cardPadding,
-                    );
-                  },
+                  future: dashboardService.getAvailableDrivers(),
+                  builder:
+                      (context, snapshot) => _buildStatCard(
+                        context,
+                        'Available Drivers',
+                        snapshot.hasData
+                            ? snapshot.data.toString()
+                            : 'Loading...',
+                        Icons.drive_eta,
+                        Colors.green,
+                        iconSize,
+                        valueFontSize,
+                        titleFontSize,
+                        cardPadding,
+                      ),
                 ),
                 FutureBuilder<int>(
-                  future: _dashboardService.getCompletedToday(),
-                  builder: (context, snapshot) {
-                    return _buildStatCard(
-                      context,
-                      'Completed Today',
-                      snapshot.hasData
-                          ? snapshot.data.toString()
-                          : 'Loading...',
-                      Icons.check_circle,
-                      Colors.purple,
-                      iconSize,
-                      valueFontSize,
-                      titleFontSize,
-                      cardPadding,
-                    );
-                  },
+                  future: dashboardService.getCompletedToday(),
+                  builder:
+                      (context, snapshot) => _buildStatCard(
+                        context,
+                        'Completed Today',
+                        snapshot.hasData
+                            ? snapshot.data.toString()
+                            : 'Loading...',
+                        Icons.check_circle,
+                        Colors.purple,
+                        iconSize,
+                        valueFontSize,
+                        titleFontSize,
+                        cardPadding,
+                      ),
                 ),
                 _buildActionCard(
                   context,
@@ -322,14 +311,14 @@ class AdminHomeScreen extends StatelessWidget {
                   () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => FuelCardDashboard(driverId: ''),
+                      builder:
+                          (context) => const FuelCardDashboard(driverId: ''),
                     ),
                   ),
                   iconSize,
                   titleFontSize,
                   cardPadding,
                 ),
-                // New Delivery Management Card
                 _buildActionCard(
                   context,
                   'Delivery Management',
@@ -338,7 +327,7 @@ class AdminHomeScreen extends StatelessWidget {
                   () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DeliveryScreen(driverId: ''),
+                      builder: (context) => const DeliveryScreen(driverId: ''),
                     ),
                   ),
                   iconSize,
@@ -371,7 +360,7 @@ class AdminHomeScreen extends StatelessWidget {
         padding: EdgeInsets.all(padding),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [color.withValues(alpha: 0.7), color],
+            colors: [color.withOpacity(0.7), color],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -379,7 +368,6 @@ class AdminHomeScreen extends StatelessWidget {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: iconSize, color: Colors.white),
             SizedBox(height: padding * 0.5),
@@ -393,8 +381,6 @@ class AdminHomeScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
                 ),
               ),
             ),
@@ -410,8 +396,6 @@ class AdminHomeScreen extends StatelessWidget {
                     color: Colors.white,
                   ),
                   textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
                 ),
               ),
             ),
@@ -441,7 +425,7 @@ class AdminHomeScreen extends StatelessWidget {
           padding: EdgeInsets.all(padding),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [color.withValues(alpha: 0.7), color],
+              colors: [color.withOpacity(0.7), color],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -449,7 +433,6 @@ class AdminHomeScreen extends StatelessWidget {
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: iconSize, color: Colors.white),
               SizedBox(height: padding * 0.5),
@@ -464,8 +447,6 @@ class AdminHomeScreen extends StatelessWidget {
                       color: Colors.white,
                     ),
                     textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
                   ),
                 ),
               ),
@@ -481,28 +462,29 @@ class DashboardService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   Future<int> getTotalUsers() async {
-    final response = await _supabase.from('users').select().count();
+    final response = await _supabase
+        .from('users')
+        .select()
+        .count(CountOption.exact);
     return response.count;
   }
 
   Future<int> getActiveConsignments() async {
-    final response =
-        await _supabase.from('consignments').select().inFilter('status', [
-          'pending',
-          'assigned',
-          'in_transit',
-        ]).count();
+    final response = await _supabase
+        .from('consignments')
+        .select()
+        .inFilter('status', ['pending', 'assigned', 'in_transit'])
+        .count(CountOption.exact);
     return response.count;
   }
 
   Future<int> getAvailableDrivers() async {
-    final response =
-        await _supabase
-            .from('users')
-            .select()
-            .eq('role', 'driver')
-            .eq('is_active', true)
-            .count();
+    final response = await _supabase
+        .from('users')
+        .select()
+        .eq('role', 'driver')
+        .eq('is_active', true)
+        .count(CountOption.exact);
     return response.count;
   }
 
@@ -510,14 +492,14 @@ class DashboardService {
     final today = DateTime.now();
     final startOfDay = DateTime(today.year, today.month, today.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
-    final response =
-        await _supabase
-            .from('consignments')
-            .select()
-            .eq('status', 'delivered')
-            .gte('updated_at', startOfDay.toIso8601String())
-            .lt('updated_at', endOfDay.toIso8601String())
-            .count();
+
+    final response = await _supabase
+        .from('consignments')
+        .select()
+        .eq('status', 'delivered')
+        .gte('updated_at', startOfDay.toIso8601String())
+        .lt('updated_at', endOfDay.toIso8601String())
+        .count(CountOption.exact);
     return response.count;
   }
 }
