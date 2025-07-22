@@ -1,25 +1,149 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logistics/providers/auth_provider.dart';
+import 'package:logistics/screens/admin/other_admin_dashboard.dart';
 import 'package:logistics/services/auth_service.dart';
-import 'package:provider/provider.dart';
-import 'other_admin_dashboard.dart';
 
-class OtherAdminLoginPage extends StatefulWidget {
+final loginProvider = StateNotifierProvider<LoginNotifier, LoginState>((ref) {
+  return LoginNotifier(ref.read(authServiceProvider));
+});
+
+class LoginNotifier extends StateNotifier<LoginState> {
+  final AuthService _authService;
+
+  LoginNotifier(this._authService) : super(LoginState.initial());
+
+  Future<void> login(String email, String password) async {
+    state = state.copyWith(isLoading: true);
+    try {
+      // Check hardcoded credentials
+      const String allowedEmail = "abdulssekyanzi@gmail.com";
+      const String allowedPassword = "Su4at3#0";
+
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (email == allowedEmail && password == allowedPassword) {
+        state = state.copyWith(
+          isLoading: false,
+          isSuccess: true,
+          errorMessage: null,
+        );
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Invalid email or password',
+        );
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  Future<void> resetPassword(String email) async {
+    state = state.copyWith(isLoading: true);
+    try {
+      await _authService.resetPassword(email);
+      state = state.copyWith(
+        isLoading: false,
+        resetSent: true,
+        errorMessage: null,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  void toggleDarkMode() {
+    state = state.copyWith(isDarkMode: !state.isDarkMode);
+  }
+
+  void toggleRememberMe() {
+    state = state.copyWith(rememberMe: !state.rememberMe);
+  }
+
+  void togglePasswordVisibility() {
+    state = state.copyWith(isPasswordVisible: !state.isPasswordVisible);
+  }
+
+  void checkCapsLock(String value) {
+    bool hasCaps =
+        value.isNotEmpty &&
+        value == value.toUpperCase() &&
+        value != value.toLowerCase();
+    if (hasCaps != state.capsLockOn) {
+      state = state.copyWith(capsLockOn: hasCaps);
+    }
+  }
+}
+
+@immutable
+class LoginState {
+  final bool isLoading;
+  final bool isSuccess;
+  final bool isDarkMode;
+  final bool rememberMe;
+  final bool isPasswordVisible;
+  final bool capsLockOn;
+  final bool resetSent;
+  final String? errorMessage;
+
+  const LoginState({
+    required this.isLoading,
+    required this.isSuccess,
+    required this.isDarkMode,
+    required this.rememberMe,
+    required this.isPasswordVisible,
+    required this.capsLockOn,
+    required this.resetSent,
+    this.errorMessage,
+  });
+
+  factory LoginState.initial() => const LoginState(
+    isLoading: false,
+    isSuccess: false,
+    isDarkMode: false,
+    rememberMe: false,
+    isPasswordVisible: false,
+    capsLockOn: false,
+    resetSent: false,
+  );
+
+  LoginState copyWith({
+    bool? isLoading,
+    bool? isSuccess,
+    bool? isDarkMode,
+    bool? rememberMe,
+    bool? isPasswordVisible,
+    bool? capsLockOn,
+    bool? resetSent,
+    String? errorMessage,
+  }) {
+    return LoginState(
+      isLoading: isLoading ?? this.isLoading,
+      isSuccess: isSuccess ?? this.isSuccess,
+      isDarkMode: isDarkMode ?? this.isDarkMode,
+      rememberMe: rememberMe ?? this.rememberMe,
+      isPasswordVisible: isPasswordVisible ?? this.isPasswordVisible,
+      capsLockOn: capsLockOn ?? this.capsLockOn,
+      resetSent: resetSent ?? this.resetSent,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+}
+
+class OtherAdminLoginPage extends ConsumerStatefulWidget {
   const OtherAdminLoginPage({super.key});
 
   @override
-  State<OtherAdminLoginPage> createState() => _OtherAdminLoginPageState();
+  ConsumerState<OtherAdminLoginPage> createState() =>
+      _OtherAdminLoginPageState();
 }
 
-class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
+class _OtherAdminLoginPageState extends ConsumerState<OtherAdminLoginPage>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  bool _isPasswordVisible = false;
-  bool _rememberMe = false;
-  bool _isDarkMode = false;
-  bool _capsLockOn = false;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -55,72 +179,18 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
     super.dispose();
   }
 
-  void _toggleTheme() {
-    setState(() {
-      _isDarkMode = !_isDarkMode;
-    });
-  }
-
-  void _checkCapsLock(String value) {
-    bool hasCaps =
-        value.isNotEmpty &&
-        value == value.toUpperCase() &&
-        value != value.toLowerCase();
-    if (hasCaps != _capsLockOn) {
-      setState(() {
-        _capsLockOn = hasCaps;
-      });
-    }
-  }
-
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
+    await ref
+        .read(loginProvider.notifier)
+        .login(_emailController.text.trim(), _passwordController.text);
 
-    // Check hardcoded credentials
-    const String allowedEmail = "abdulssekyanzi@gmail.com";
-    const String allowedPassword = "Su4at3#0";
-
-    try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-
-      if (!mounted) return;
-
-      if (_emailController.text.trim() == allowedEmail &&
-          _passwordController.text == allowedPassword) {
-        // Navigate to OtherAdminDashboard for valid credentials
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const OtherAdminDashboard()),
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Login successful as admin'),
-            backgroundColor: _isDarkMode ? Colors.green[700] : Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      } else {
-        // Show error for invalid credentials
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Invalid email or password'),
-            backgroundColor: _isDarkMode ? Colors.red[700] : Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login failed: ${e.toString()}'),
-            backgroundColor: _isDarkMode ? Colors.red[700] : Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+    final state = ref.read(loginProvider);
+    if (state.isSuccess && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const OtherAdminDashboard()),
+      );
     }
   }
 
@@ -140,38 +210,10 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
               ),
               ElevatedButton(
                 onPressed: () async {
-                  final authService = Provider.of<AuthService>(
-                    context,
-                    listen: false,
-                  );
-                  try {
-                    await authService.resetPassword(
-                      _emailController.text.trim(),
-                    );
-                    if (mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Password reset link sent!'),
-                          backgroundColor:
-                              _isDarkMode ? Colors.green[700] : Colors.green,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error: ${e.toString()}'),
-                          backgroundColor:
-                              _isDarkMode ? Colors.red[700] : Colors.red,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  }
+                  await ref
+                      .read(loginProvider.notifier)
+                      .resetPassword(_emailController.text.trim());
+                  if (mounted) Navigator.pop(context);
                 },
                 child: const Text('Send Link'),
               ),
@@ -182,15 +224,17 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
 
   @override
   Widget build(BuildContext context) {
-    final theme = _isDarkMode ? ThemeData.dark() : ThemeData.light();
+    final state = ref.watch(loginProvider);
+    final theme = state.isDarkMode ? ThemeData.dark() : ThemeData.light();
     final colorScheme = theme.colorScheme;
-    final authService = Provider.of<AuthService>(context);
 
     return Theme(
       data: theme,
       child: Scaffold(
         backgroundColor:
-            _isDarkMode ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
+            state.isDarkMode
+                ? const Color(0xFF121212)
+                : const Color(0xFFF5F7FA),
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -202,11 +246,11 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 400),
                     child: Card(
-                      elevation: _isDarkMode ? 8 : 12,
+                      elevation: state.isDarkMode ? 8 : 12,
                       shadowColor:
-                          _isDarkMode
+                          state.isDarkMode
                               ? Colors.black54
-                              : Colors.grey.withValues(alpha: 0.3),
+                              : Colors.grey.withOpacity(0.3),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -215,19 +259,19 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            _buildHeader(),
+                            _buildHeader(state),
                             const SizedBox(height: 32),
-                            _buildLoginForm(),
+                            _buildLoginForm(state),
                             const SizedBox(height: 24),
-                            _buildLoginButton(authService.isLoading),
+                            _buildLoginButton(state),
                             const SizedBox(height: 16),
-                            _buildForgotPassword(),
+                            _buildForgotPassword(state),
                             const SizedBox(height: 24),
-                            _buildDivider(),
+                            _buildDivider(state),
                             const SizedBox(height: 24),
-                            _buildSocialLogin(),
+                            _buildSocialLogin(state),
                             const SizedBox(height: 16),
-                            _buildSecurityBadge(),
+                            _buildSecurityBadge(state),
                           ],
                         ),
                       ),
@@ -240,10 +284,10 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
         ),
         floatingActionButton: FloatingActionButton(
           mini: true,
-          onPressed: _toggleTheme,
+          onPressed: () => ref.read(loginProvider.notifier).toggleDarkMode(),
           backgroundColor: colorScheme.secondary,
           child: Icon(
-            _isDarkMode ? Icons.light_mode : Icons.dark_mode,
+            state.isDarkMode ? Icons.light_mode : Icons.dark_mode,
             color: colorScheme.onSecondary,
           ),
         ),
@@ -251,7 +295,7 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(LoginState state) {
     return Column(
       children: [
         Container(
@@ -260,7 +304,7 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors:
-                  _isDarkMode
+                  state.isDarkMode
                       ? [Colors.blue[400]!, Colors.purple[400]!]
                       : [Colors.blue[600]!, Colors.purple[600]!],
               begin: Alignment.topLeft,
@@ -279,14 +323,14 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
           'Admin Portal',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
-            color: _isDarkMode ? Colors.white : Colors.grey[800],
+            color: state.isDarkMode ? Colors.white : Colors.grey[800],
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Welcome back! Please sign in to continue.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: _isDarkMode ? Colors.grey[400] : Colors.grey[600],
+            color: state.isDarkMode ? Colors.grey[400] : Colors.grey[600],
           ),
           textAlign: TextAlign.center,
         ),
@@ -294,23 +338,23 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
     );
   }
 
-  Widget _buildLoginForm() {
+  Widget _buildLoginForm(LoginState state) {
     return Form(
       key: _formKey,
       child: Column(
         children: [
-          _buildEmailField(),
+          _buildEmailField(state),
           const SizedBox(height: 16),
-          _buildPasswordField(),
-          if (_capsLockOn) _buildCapsLockWarning(),
+          _buildPasswordField(state),
+          if (state.capsLockOn) _buildCapsLockWarning(state),
           const SizedBox(height: 16),
-          _buildRememberMe(),
+          _buildRememberMe(state),
         ],
       ),
     );
   }
 
-  Widget _buildEmailField() {
+  Widget _buildEmailField(LoginState state) {
     return TextFormField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
@@ -322,8 +366,8 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor:
-            _isDarkMode
-                ? Colors.grey[800]?.withValues(alpha: 0.3)
+            state.isDarkMode
+                ? Colors.grey[800]!.withOpacity(0.3)
                 : Colors.grey[50],
       ),
       validator: (value) {
@@ -338,31 +382,29 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
     );
   }
 
-  Widget _buildPasswordField() {
+  Widget _buildPasswordField(LoginState state) {
     return TextFormField(
       controller: _passwordController,
-      obscureText: !_isPasswordVisible,
+      obscureText: !state.isPasswordVisible,
       textInputAction: TextInputAction.done,
-      onChanged: _checkCapsLock,
+      onChanged:
+          (value) => ref.read(loginProvider.notifier).checkCapsLock(value),
       decoration: InputDecoration(
         labelText: 'Password',
         hintText: 'Enter your password',
         prefixIcon: const Icon(Icons.lock_outline),
         suffixIcon: IconButton(
           icon: Icon(
-            _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+            state.isPasswordVisible ? Icons.visibility_off : Icons.visibility,
           ),
-          onPressed: () {
-            setState(() {
-              _isPasswordVisible = !_isPasswordVisible;
-            });
-          },
+          onPressed:
+              () => ref.read(loginProvider.notifier).togglePasswordVisibility(),
         ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor:
-            _isDarkMode
-                ? Colors.grey[800]?.withValues(alpha: 0.3)
+            state.isDarkMode
+                ? Colors.grey[800]!.withOpacity(0.3)
                 : Colors.grey[50],
       ),
       validator: (value) {
@@ -378,7 +420,7 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
     );
   }
 
-  Widget _buildCapsLockWarning() {
+  Widget _buildCapsLockWarning(LoginState state) {
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -404,16 +446,12 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
     );
   }
 
-  Widget _buildRememberMe() {
+  Widget _buildRememberMe(LoginState state) {
     return Row(
       children: [
         Checkbox(
-          value: _rememberMe,
-          onChanged: (value) {
-            setState(() {
-              _rememberMe = value ?? false;
-            });
-          },
+          value: state.rememberMe,
+          onChanged: (_) => ref.read(loginProvider.notifier).toggleRememberMe(),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         ),
         Text('Remember me', style: Theme.of(context).textTheme.bodyMedium),
@@ -421,14 +459,15 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
     );
   }
 
-  Widget _buildLoginButton(bool isLoading) {
+  Widget _buildLoginButton(LoginState state) {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: isLoading ? null : _handleLogin,
+        onPressed: state.isLoading ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _isDarkMode ? Colors.blue[600] : Colors.blue[700],
+          backgroundColor:
+              state.isDarkMode ? Colors.blue[600] : Colors.blue[700],
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -436,7 +475,7 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
           elevation: 2,
         ),
         child:
-            isLoading
+            state.isLoading
                 ? const SizedBox(
                   width: 20,
                   height: 20,
@@ -453,20 +492,20 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
     );
   }
 
-  Widget _buildForgotPassword() {
+  Widget _buildForgotPassword(LoginState state) {
     return TextButton(
       onPressed: _handleForgotPassword,
       child: Text(
         'Forgot your password?',
         style: TextStyle(
-          color: _isDarkMode ? Colors.blue[300] : Colors.blue[700],
+          color: state.isDarkMode ? Colors.blue[300] : Colors.blue[700],
           fontWeight: FontWeight.w500,
         ),
       ),
     );
   }
 
-  Widget _buildDivider() {
+  Widget _buildDivider(LoginState state) {
     return Row(
       children: [
         Expanded(child: Divider(color: Colors.grey[400])),
@@ -485,13 +524,14 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
     );
   }
 
-  Widget _buildSocialLogin() {
+  Widget _buildSocialLogin(LoginState state) {
     return Column(
       children: [
         _buildSocialButton(
           'Continue with Google',
           Icons.g_mobiledata,
           Colors.red[600]!,
+          state,
           () => _handleSocialLogin('Google'),
         ),
         const SizedBox(height: 12),
@@ -499,6 +539,7 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
           'Continue with Microsoft',
           Icons.business,
           Colors.blue[600]!,
+          state,
           () => _handleSocialLogin('Microsoft'),
         ),
       ],
@@ -509,6 +550,7 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
     String text,
     IconData icon,
     Color color,
+    LoginState state,
     VoidCallback onPressed,
   ) {
     return SizedBox(
@@ -520,7 +562,7 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
         label: Text(
           text,
           style: TextStyle(
-            color: _isDarkMode ? Colors.white : Colors.grey[700],
+            color: state.isDarkMode ? Colors.white : Colors.grey[700],
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -529,24 +571,24 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
             borderRadius: BorderRadius.circular(12),
           ),
           side: BorderSide(
-            color: _isDarkMode ? Colors.grey[600]! : Colors.grey[300]!,
+            color: state.isDarkMode ? Colors.grey[600]! : Colors.grey[300]!,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSecurityBadge() {
+  Widget _buildSecurityBadge(LoginState state) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color:
-            _isDarkMode
-                ? Colors.green[800]?.withValues(alpha: 0.2)
+            state.isDarkMode
+                ? Colors.green[800]!.withOpacity(0.2)
                 : Colors.green[50],
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _isDarkMode ? Colors.green[600]! : Colors.green[200]!,
+          color: state.isDarkMode ? Colors.green[600]! : Colors.green[200]!,
         ),
       ),
       child: Row(
@@ -555,14 +597,14 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
           Icon(
             Icons.security,
             size: 16,
-            color: _isDarkMode ? Colors.green[400] : Colors.green[700],
+            color: state.isDarkMode ? Colors.green[400] : Colors.green[700],
           ),
           const SizedBox(width: 6),
           Text(
             'SSL Secured',
             style: TextStyle(
               fontSize: 12,
-              color: _isDarkMode ? Colors.green[400] : Colors.green[700],
+              color: state.isDarkMode ? Colors.green[400] : Colors.green[700],
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -575,10 +617,11 @@ class _OtherAdminLoginPageState extends State<OtherAdminLoginPage>
     // Simulate social login
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
+        final state = ref.read(loginProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$provider login initiated'),
-            backgroundColor: _isDarkMode ? Colors.blue[700] : Colors.blue,
+            backgroundColor: state.isDarkMode ? Colors.blue[700] : Colors.blue,
             behavior: SnackBarBehavior.floating,
           ),
         );
