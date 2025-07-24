@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,6 +17,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    // Initialize timezone database
+    tz.initializeTimeZones();
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -113,14 +118,25 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'Choose Your Role',
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF343A40),
+          SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.2),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(
+                parent: _animationController,
+                curve: Curves.easeInOut,
+              ),
             ),
-            textAlign: TextAlign.center,
+            child: Text(
+              '${getGreeting(userName: null)} ',
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF343A40),
+              ),
+              textAlign: TextAlign.center,
+            ),
           ),
           const SizedBox(height: 12),
           const Text(
@@ -138,9 +154,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               }
             },
           ),
-          const SizedBox(
-            height: 24,
-          ), // Add padding to ensure content is not cut off
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -349,7 +363,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   void _handleRoleSelection(String role) {
-    // Show loading indicator
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -368,11 +381,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
     );
 
-    // Simulate loading and navigate to appropriate page
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted) return;
 
-      Navigator.of(context).pop(); // Close loading dialog
+      Navigator.of(context).pop();
 
       switch (role) {
         case 'Admin':
@@ -398,5 +410,38 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         );
       }
     });
+  }
+
+  String getGreeting({String? userName}) {
+    try {
+      final location = tz.getLocation('Africa/Nairobi');
+      final now = tz.TZDateTime.now(location);
+      final hour = now.hour;
+      String greeting;
+      if (hour < 12) {
+        greeting = 'Good Morning';
+      } else if (hour < 17) {
+        greeting = 'Good Afternoon';
+      } else if (hour < 20) {
+        greeting = 'Good Evening';
+      } else {
+        greeting = 'Good Night';
+      }
+      return userName != null ? '$greeting, $userName' : greeting;
+    } catch (e) {
+      // Fallback to local time if timezone fails
+      final hour = DateTime.now().hour;
+      String greeting;
+      if (hour < 12) {
+        greeting = 'Good Morning';
+      } else if (hour < 17) {
+        greeting = 'Good Afternoon';
+      } else if (hour < 20) {
+        greeting = 'Good Evening';
+      } else {
+        greeting = 'Good Night';
+      }
+      return userName != null ? '$greeting, $userName' : greeting;
+    }
   }
 }

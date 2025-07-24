@@ -1,4 +1,3 @@
-// lib/services/auth_service.dart
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -118,7 +117,7 @@ class AuthService extends ChangeNotifier {
     String password, {
     String? fullName,
     String? phone,
-    String? role,
+    String? role = 'user',
     String? profileImage,
   }) async {
     _setLoading(true);
@@ -129,7 +128,7 @@ class AuthService extends ChangeNotifier {
         data: {
           'full_name': fullName,
           'phone': phone,
-          'role': role ?? 'user',
+          'role': role,
           'profile_image': profileImage,
         },
       );

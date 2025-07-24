@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:logistics/services/auth_service.dart';
 
 class OtherAdminRegisterPage extends StatefulWidget {
   const OtherAdminRegisterPage({super.key});
@@ -14,6 +16,8 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _pageController = PageController();
+  final AuthService _authService = AuthService();
+  final _supabase = Supabase.instance.client;
 
   // Controllers
   final _firstNameController = TextEditingController();
@@ -31,6 +35,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
   File? _profileImage;
   String _selectedCountryCode = '+1';
   bool _isLoading = false;
+  String? _errorMessage;
 
   // Animation controllers
   late AnimationController _fadeController;
@@ -46,6 +51,10 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
   @override
   void initState() {
     super.initState();
+    _initAnimations();
+  }
+
+  void _initAnimations() {
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -86,155 +95,57 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
 
   void _checkPasswordStrength(String password) {
     double strength = 0;
-    String strengthText = '';
-    Color strengthColor = Colors.red;
-
     if (password.length >= 8) strength += 0.2;
     if (password.contains(RegExp(r'[A-Z]'))) strength += 0.2;
     if (password.contains(RegExp(r'[a-z]'))) strength += 0.2;
     if (password.contains(RegExp(r'[0-9]'))) strength += 0.2;
     if (password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) strength += 0.2;
 
-    if (strength <= 0.2) {
-      strengthText = 'Very Weak';
-      strengthColor = Colors.red;
-    } else if (strength <= 0.4) {
-      strengthText = 'Weak';
-      strengthColor = Colors.orange;
-    } else if (strength <= 0.6) {
-      strengthText = 'Fair';
-      strengthColor = Colors.yellow;
-    } else if (strength <= 0.8) {
-      strengthText = 'Good';
-      strengthColor = Colors.lightGreen;
-    } else {
-      strengthText = 'Strong';
-      strengthColor = Colors.green;
-    }
-
     setState(() {
       _passwordStrength = strength;
-      _passwordStrengthText = strengthText;
-      _passwordStrengthColor = strengthColor;
+      if (strength <= 0.2) {
+        _passwordStrengthText = 'Very Weak';
+        _passwordStrengthColor = Colors.red;
+      } else if (strength <= 0.4) {
+        _passwordStrengthText = 'Weak';
+        _passwordStrengthColor = Colors.orange;
+      } else if (strength <= 0.6) {
+        _passwordStrengthText = 'Fair';
+        _passwordStrengthColor = Colors.yellow;
+      } else if (strength <= 0.8) {
+        _passwordStrengthText = 'Good';
+        _passwordStrengthColor = Colors.lightGreen;
+      } else {
+        _passwordStrengthText = 'Strong';
+        _passwordStrengthColor = Colors.green;
+      }
     });
   }
 
   Future<void> _pickImage() async {
     try {
-      final ImagePicker picker = ImagePicker();
-
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder:
-            (context) => Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const Text(
-                    'Select Profile Image',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildImageOption(
-                        icon: Icons.camera_alt,
-                        label: 'Camera',
-                        onTap: () async {
-                          Navigator.pop(context);
-                          final XFile? image = await picker.pickImage(
-                            source: ImageSource.camera,
-                            maxWidth: 512,
-                            maxHeight: 512,
-                            imageQuality: 80,
-                          );
-                          if (image != null) {
-                            setState(() {
-                              _profileImage = File(image.path);
-                            });
-                          }
-                        },
-                      ),
-                      _buildImageOption(
-                        icon: Icons.photo_library,
-                        label: 'Gallery',
-                        onTap: () async {
-                          Navigator.pop(context);
-                          final XFile? image = await picker.pickImage(
-                            source: ImageSource.gallery,
-                            maxWidth: 512,
-                            maxHeight: 512,
-                            imageQuality: 80,
-                          );
-                          if (image != null) {
-                            setState(() {
-                              _profileImage = File(image.path);
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
-                ],
-              ),
-            ),
+      final pickedFile = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
       );
+      if (pickedFile != null) {
+        setState(() {
+          _profileImage = File(pickedFile.path);
+          _errorMessage = null;
+        });
+      }
+    } on PlatformException catch (e) {
+      setState(() => _errorMessage = 'Failed to pick image: ${e.message}');
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+      setState(() => _errorMessage = 'Error picking image: $e');
     }
   }
 
-  Widget _buildImageOption({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: const Color(0xFF6C5CE7).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Icon(icon, color: const Color(0xFF6C5CE7), size: 30),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _nextStep() {
-    if (_currentStep < 2) {
-      setState(() {
-        _currentStep++;
-      });
+    if (_currentStep < 2 && _formKey.currentState!.validate()) {
+      setState(() => _currentStep++);
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -244,9 +155,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
 
   void _previousStep() {
     if (_currentStep > 0) {
-      setState(() {
-        _currentStep--;
-      });
+      setState(() => _currentStep--);
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -254,42 +163,78 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
     }
   }
 
+  Future<String?> _uploadProfileImage() async {
+    if (_profileImage == null) return null;
+
+    try {
+      final fileExt = _profileImage!.path.split('.').last;
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final fileBytes = await _profileImage!.readAsBytes();
+
+      final uploadedPath = await _supabase.storage
+          .from('profile_images')
+          .uploadBinary(fileName, fileBytes);
+
+      if (uploadedPath.isEmpty) {
+        throw Exception('Failed to upload image');
+      }
+
+      return _supabase.storage.from('profile_images').getPublicUrl(fileName);
+    } catch (e) {
+      throw Exception('Failed to upload image: $e');
+    }
+  }
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate() || !_agreeToTerms) {
       if (!_agreeToTerms) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Please agree to the Terms of Service and Privacy Policy',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() => _errorMessage = 'Please agree to terms and conditions');
       }
       return;
     }
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // Upload profile image
+      final profileImageUrl = await _uploadProfileImage();
 
-    setState(() {
-      _isLoading = false;
-    });
+      // Register admin
+      final response = await _authService.signUp(
+        _emailController.text.trim(),
+        _passwordController.text,
+        fullName:
+            '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}',
+        phone: '$_selectedCountryCode${_phoneController.text.trim()}',
+        role: 'other_admin',
+        profileImage: profileImageUrl,
+      );
 
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Registration successful!'),
-        backgroundColor: Colors.green,
-      ),
-    );
+      if (response.user == null) {
+        throw Exception('Failed to create admin account');
+      }
 
-    // Navigate back or to next screen
-    Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Admin registered successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } on AuthException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } on Exception catch (e) {
+      setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -305,6 +250,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
               children: [
                 _buildHeader(),
                 _buildProgressIndicator(),
+                if (_errorMessage != null) _buildErrorBanner(),
                 Expanded(
                   child: Form(
                     key: _formKey,
@@ -335,24 +281,9 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
         children: [
           Row(
             children: [
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.arrow_back, color: Color(0xFF2D3748)),
-                ),
+              IconButton(
+                icon: const Icon(Icons.arrow_back, size: 24),
+                onPressed: () => Navigator.pop(context),
               ),
               const Spacer(),
               const Text(
@@ -364,7 +295,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
                 ),
               ),
               const Spacer(),
-              const SizedBox(width: 40),
+              const SizedBox(width: 48),
             ],
           ),
           const SizedBox(height: 16),
@@ -417,6 +348,35 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
     );
   }
 
+  Widget _buildErrorBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: BoxDecoration(
+        color: Colors.red[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red[200]!),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 16),
+            onPressed: () => setState(() => _errorMessage = null),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPersonalInfoStep() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -434,9 +394,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
                   hint: 'John',
                   icon: Icons.person_outline,
                   validator: (value) {
-                    if (value?.isEmpty ?? true) {
-                      return 'First name is required';
-                    }
+                    if (value?.isEmpty ?? true) return 'First name is required';
                     return null;
                   },
                 ),
@@ -449,9 +407,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
                   hint: 'Doe',
                   icon: Icons.person_outline,
                   validator: (value) {
-                    if (value?.isEmpty ?? true) {
-                      return 'Last name is required';
-                    }
+                    if (value?.isEmpty ?? true) return 'Last name is required';
                     return null;
                   },
                 ),
@@ -466,13 +422,11 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
             validator: (value) {
-              if (value?.isEmpty ?? true) {
-                return 'Email is required';
-              }
+              if (value?.isEmpty ?? true) return 'Email is required';
               if (!RegExp(
                 r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
               ).hasMatch(value!)) {
-                return 'Please enter a valid email';
+                return 'Enter a valid email';
               }
               return null;
             },
@@ -490,47 +444,13 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
           const SizedBox(height: 20),
           _buildPhoneField(),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFF6C5CE7).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFF6C5CE7).withOpacity(0.2),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: const Color(0xFF6C5CE7),
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Contact Information',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF6C5CE7),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Your phone number will be used for account verification and security purposes. We\'ll send you a verification code to confirm your identity.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF4A5568),
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
+          _buildInfoCard(
+            icon: Icons.info_outline,
+            color: const Color(0xFF6C5CE7),
+            title: 'Contact Information',
+            content:
+                'Your phone number will be used for account verification '
+                'and security purposes. We\'ll send a verification code to confirm your identity.',
           ),
         ],
       ),
@@ -549,41 +469,15 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
           const SizedBox(height: 32),
           _buildTermsCheckbox(),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.green.withOpacity(0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.security, color: Colors.green, size: 20),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Security Tips',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  '• Use a strong password with at least 8 characters\n• Include uppercase, lowercase, numbers, and symbols\n• Don\'t use personal information in your password\n• Keep your login credentials secure',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF4A5568),
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
+          _buildInfoCard(
+            icon: Icons.security,
+            color: Colors.green,
+            title: 'Security Tips',
+            content:
+                '• Use a strong password with at least 8 characters\n'
+                '• Include uppercase, lowercase, numbers, and symbols\n'
+                '• Don\'t use personal information in your password\n'
+                '• Keep your login credentials secure',
           ),
         ],
       ),
@@ -594,45 +488,73 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
     return Center(
       child: GestureDetector(
         onTap: _pickImage,
-        child: Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
+        child: Stack(
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child:
-              _profileImage != null
-                  ? ClipRRect(
-                    borderRadius: BorderRadius.circular(60),
-                    child: Image.file(_profileImage!, fit: BoxFit.cover),
-                  )
-                  : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.add_a_photo,
-                        size: 32,
-                        color: const Color(0xFF6C5CE7),
+              child:
+                  _profileImage != null
+                      ? ClipRRect(
+                        borderRadius: BorderRadius.circular(60),
+                        child: Image.file(_profileImage!, fit: BoxFit.cover),
+                      )
+                      : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_a_photo,
+                            size: 32,
+                            color: const Color(0xFF6C5CE7),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Add Photo',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF718096),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Add Photo',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF718096),
-                          fontWeight: FontWeight.w500,
-                        ),
+            ),
+            if (_profileImage != null)
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
+                  child: const Icon(
+                    Icons.edit,
+                    size: 16,
+                    color: Color(0xFF6C5CE7),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -679,7 +601,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: const Color(0xFFE2E8F0), width: 1),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
@@ -729,8 +651,8 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
                   icon: const Icon(Icons.arrow_drop_down, size: 20),
                   items:
                       ['+1', '+44', '+91', '+86', '+81']
-                          .map(
-                            (code) => DropdownMenuItem(
+                          .map<DropdownMenuItem<String>>(
+                            (code) => DropdownMenuItem<String>(
                               value: code,
                               child: Text(
                                 code,
@@ -739,11 +661,8 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
                             ),
                           )
                           .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCountryCode = value!;
-                    });
-                  },
+                  onChanged:
+                      (value) => setState(() => _selectedCountryCode = value!),
                 ),
               ),
             ),
@@ -757,12 +676,8 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
                   LengthLimitingTextInputFormatter(10),
                 ],
                 validator: (value) {
-                  if (value?.isEmpty ?? true) {
-                    return 'Phone number is required';
-                  }
-                  if (value!.length < 10) {
-                    return 'Please enter a valid phone number';
-                  }
+                  if (value?.isEmpty ?? true) return 'Phone number is required';
+                  if (value!.length < 10) return 'Enter a valid phone number';
                   return null;
                 },
                 decoration: InputDecoration(
@@ -824,19 +739,12 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
               _obscurePassword ? Icons.visibility : Icons.visibility_off,
               color: const Color(0xFF718096),
             ),
-            onPressed: () {
-              setState(() {
-                _obscurePassword = !_obscurePassword;
-              });
-            },
+            onPressed:
+                () => setState(() => _obscurePassword = !_obscurePassword),
           ),
           validator: (value) {
-            if (value?.isEmpty ?? true) {
-              return 'Password is required';
-            }
-            if (value!.length < 8) {
-              return 'Password must be at least 8 characters';
-            }
+            if (value?.isEmpty ?? true) return 'Password is required';
+            if (value!.length < 8) return 'Must be at least 8 characters';
             return null;
           },
         ),
@@ -887,19 +795,14 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
           _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
           color: const Color(0xFF718096),
         ),
-        onPressed: () {
-          setState(() {
-            _obscureConfirmPassword = !_obscureConfirmPassword;
-          });
-        },
+        onPressed:
+            () => setState(
+              () => _obscureConfirmPassword = !_obscureConfirmPassword,
+            ),
       ),
       validator: (value) {
-        if (value?.isEmpty ?? true) {
-          return 'Please confirm your password';
-        }
-        if (value != _passwordController.text) {
-          return 'Passwords do not match';
-        }
+        if (value?.isEmpty ?? true) return 'Please confirm your password';
+        if (value != _passwordController.text) return 'Passwords do not match';
         return null;
       },
     );
@@ -911,21 +814,13 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
       children: [
         Checkbox(
           value: _agreeToTerms,
-          onChanged: (value) {
-            setState(() {
-              _agreeToTerms = value ?? false;
-            });
-          },
+          onChanged: (value) => setState(() => _agreeToTerms = value ?? false),
           activeColor: const Color(0xFF6C5CE7),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         ),
         Expanded(
           child: GestureDetector(
-            onTap: () {
-              setState(() {
-                _agreeToTerms = !_agreeToTerms;
-              });
-            },
+            onTap: () => setState(() => _agreeToTerms = !_agreeToTerms),
             child: Padding(
               padding: const EdgeInsets.only(top: 12),
               child: RichText(
@@ -961,6 +856,50 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildInfoCard({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String content,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            content,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF4A5568),
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1021,7 +960,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage>
                         ),
                       )
                       : Text(
-                        _currentStep == 2 ? 'Register' : 'Next',
+                        _currentStep == 2 ? 'Register Admin' : 'Next',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

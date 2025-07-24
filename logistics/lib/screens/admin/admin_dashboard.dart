@@ -43,7 +43,7 @@ class _AdminDashboardState extends ConsumerState<AdminDashboard> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
+        title: const Text('ADMIN'),
         backgroundColor: AppConstants.primaryColor,
         foregroundColor: Colors.white,
         toolbarHeight: toolbarHeight,

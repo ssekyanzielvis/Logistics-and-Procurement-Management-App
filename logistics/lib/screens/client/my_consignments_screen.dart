@@ -68,62 +68,58 @@ class _MyConsignmentsScreenState extends State<MyConsignmentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'My Consignments',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildFilterChip('all', 'All'),
-                const SizedBox(width: 8),
-                _buildFilterChip('pending', 'Pending'),
-                const SizedBox(width: 8),
-                _buildFilterChip('assigned', 'Assigned'),
-                const SizedBox(width: 8),
-                _buildFilterChip('in_transit', 'In Transit'),
-                const SizedBox(width: 8),
-                _buildFilterChip('delivered', 'Delivered'),
-              ],
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'My Consignments',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Consignments List
-          Expanded(
-            child:
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _consignments.isEmpty
-                    ? const Center(
-                      child: Text(
-                        'No consignments found',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+            const SizedBox(height: 16),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip('all', 'All'),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('pending', 'Pending'),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('assigned', 'Assigned'),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('in_transit', 'In Transit'),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('delivered', 'Delivered'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child:
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _consignments.isEmpty
+                      ? const Center(
+                        child: Text(
+                          'No consignments found',
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      )
+                      : RefreshIndicator(
+                        onRefresh: _loadConsignments,
+                        child: ListView.builder(
+                          itemCount: _consignments.length,
+                          itemBuilder: (context, index) {
+                            final consignment = _consignments[index];
+                            return _buildConsignmentCard(consignment);
+                          },
+                        ),
                       ),
-                    )
-                    : RefreshIndicator(
-                      onRefresh: _loadConsignments,
-                      child: ListView.builder(
-                        itemCount: _consignments.length,
-                        itemBuilder: (context, index) {
-                          final consignment = _consignments[index];
-                          return _buildConsignmentCard(consignment);
-                        },
-                      ),
-                    ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

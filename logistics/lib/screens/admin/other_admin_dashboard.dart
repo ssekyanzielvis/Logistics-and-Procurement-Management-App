@@ -19,7 +19,8 @@ class OtherAdminDashboard extends ConsumerStatefulWidget {
   const OtherAdminDashboard({super.key});
 
   @override
-  ConsumerState<OtherAdminDashboard> createState() => _OtherAdminDashboardState();
+  ConsumerState<OtherAdminDashboard> createState() =>
+      _OtherAdminDashboardState();
 }
 
 class _OtherAdminDashboardState extends ConsumerState<OtherAdminDashboard> {
@@ -145,13 +146,15 @@ class OtherAdminHomeScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: FutureBuilder<Map<String, dynamic>?>(
-              future: authService.currentUser != null
-                  ? authService.getUserProfile(authService.currentUser!.id)
-                  : null,
+              future:
+                  authService.currentUser != null
+                      ? authService.getUserProfile(authService.currentUser!.id)
+                      : null,
               builder: (context, snapshot) {
-                final displayName = snapshot.hasData && snapshot.data != null
-                    ? snapshot.data!['full_name'] ?? 'Administrator'
-                    : 'Administrator';
+                final displayName =
+                    snapshot.hasData && snapshot.data != null
+                        ? snapshot.data!['full_name'] ?? 'Administrator'
+                        : 'Administrator';
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,59 +204,71 @@ class OtherAdminHomeScreen extends ConsumerWidget {
               children: [
                 FutureBuilder<int>(
                   future: dashboardService.getTotalUsers(),
-                  builder: (context, snapshot) => _buildStatCard(
-                    context,
-                    'Total Users',
-                    snapshot.hasData ? snapshot.data.toString() : 'Loading...',
-                    Icons.people,
-                    Colors.blue,
-                    iconSize,
-                    valueFontSize,
-                    titleFontSize,
-                    cardPadding,
-                  ),
+                  builder:
+                      (context, snapshot) => _buildStatCard(
+                        context,
+                        'Total Users',
+                        snapshot.hasData
+                            ? snapshot.data.toString()
+                            : 'Loading...',
+                        Icons.people,
+                        Colors.blue,
+                        iconSize,
+                        valueFontSize,
+                        titleFontSize,
+                        cardPadding,
+                      ),
                 ),
                 FutureBuilder<int>(
                   future: dashboardService.getActiveConsignments(),
-                  builder: (context, snapshot) => _buildStatCard(
-                    context,
-                    'Active Consignments',
-                    snapshot.hasData ? snapshot.data.toString() : 'Loading...',
-                    Icons.local_shipping,
-                    Colors.orange,
-                    iconSize,
-                    valueFontSize,
-                    titleFontSize,
-                    cardPadding,
-                  ),
+                  builder:
+                      (context, snapshot) => _buildStatCard(
+                        context,
+                        'Active Consignments',
+                        snapshot.hasData
+                            ? snapshot.data.toString()
+                            : 'Loading...',
+                        Icons.local_shipping,
+                        Colors.orange,
+                        iconSize,
+                        valueFontSize,
+                        titleFontSize,
+                        cardPadding,
+                      ),
                 ),
                 FutureBuilder<int>(
                   future: dashboardService.getAvailableDrivers(),
-                  builder: (context, snapshot) => _buildStatCard(
-                    context,
-                    'Available Drivers',
-                    snapshot.hasData ? snapshot.data.toString() : 'Loading...',
-                    Icons.drive_eta,
-                    Colors.green,
-                    iconSize,
-                    valueFontSize,
-                    titleFontSize,
-                    cardPadding,
-                  ),
+                  builder:
+                      (context, snapshot) => _buildStatCard(
+                        context,
+                        'Available Drivers',
+                        snapshot.hasData
+                            ? snapshot.data.toString()
+                            : 'Loading...',
+                        Icons.drive_eta,
+                        Colors.green,
+                        iconSize,
+                        valueFontSize,
+                        titleFontSize,
+                        cardPadding,
+                      ),
                 ),
                 FutureBuilder<int>(
                   future: dashboardService.getCompletedToday(),
-                  builder: (context, snapshot) => _buildStatCard(
-                    context,
-                    'Completed Today',
-                    snapshot.hasData ? snapshot.data.toString() : 'Loading...',
-                    Icons.check_circle,
-                    Colors.purple,
-                    iconSize,
-                    valueFontSize,
-                    titleFontSize,
-                    cardPadding,
-                  ),
+                  builder:
+                      (context, snapshot) => _buildStatCard(
+                        context,
+                        'Completed Today',
+                        snapshot.hasData
+                            ? snapshot.data.toString()
+                            : 'Loading...',
+                        Icons.check_circle,
+                        Colors.purple,
+                        iconSize,
+                        valueFontSize,
+                        titleFontSize,
+                        cardPadding,
+                      ),
                 ),
                 _buildActionCard(
                   context,
@@ -263,7 +278,8 @@ class OtherAdminHomeScreen extends ConsumerWidget {
                   () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const FuelCardDashboard(driverId: ''),
+                      builder:
+                          (context) => const FuelCardDashboard(driverId: ''),
                     ),
                   ),
                   iconSize,
@@ -421,21 +437,23 @@ class DashboardService {
   }
 
   Future<int> getActiveConsignments() async {
-    final response = await _supabase
-        .from('consignments')
-        .select()
-        .inFilter('status', ['pending', 'assigned', 'in_transit'])
-        .count();
+    final response =
+        await _supabase.from('consignments').select().inFilter('status', [
+          'pending',
+          'assigned',
+          'in_transit',
+        ]).count();
     return response.count;
   }
 
   Future<int> getAvailableDrivers() async {
-    final response = await _supabase
-        .from('users')
-        .select()
-        .eq('role', 'driver')
-        .eq('is_active', true)
-        .count();
+    final response =
+        await _supabase
+            .from('users')
+            .select()
+            .eq('role', 'driver')
+            .eq('is_active', true)
+            .count();
     return response.count;
   }
 
@@ -443,13 +461,14 @@ class DashboardService {
     final today = DateTime.now();
     final startOfDay = DateTime(today.year, today.month, today.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
-    final response = await _supabase
-        .from('consignments')
-        .select()
-        .eq('status', 'delivered')
-        .gte('updated_at', startOfDay.toIso8601String())
-        .lt('updated_at', endOfDay.toIso8601String())
-        .count();
+    final response =
+        await _supabase
+            .from('consignments')
+            .select()
+            .eq('status', 'delivered')
+            .gte('updated_at', startOfDay.toIso8601String())
+            .lt('updated_at', endOfDay.toIso8601String())
+            .count();
     return response.count;
   }
 }

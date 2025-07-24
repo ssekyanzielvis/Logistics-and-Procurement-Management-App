@@ -3,6 +3,7 @@ import 'package:logistics/models/fuel_card_models.dart';
 import 'package:logistics/screens/home/add_transaction_screen.dart';
 import 'package:logistics/screens/home/assignment_details_screen.dart';
 import 'package:logistics/screens/home/create_fuel_card_screen.dart';
+import 'package:logistics/screens/home/delivery_screen.dart';
 import 'package:logistics/screens/home/driver_fuel_card_screen.dart';
 import 'package:logistics/screens/home/fuel_card_lockers_screen.dart';
 import 'package:logistics/screens/home/fuel_card_management_screen.dart';
@@ -43,6 +44,9 @@ class FuelCardRoutes {
       '/fuel-card/transactions': (context) {
         final cardId = ModalRoute.of(context)!.settings.arguments as String;
         return FuelTransactionsScreen(cardId: cardId);
+      },
+      '/delivery': (context) {
+        return DeliveryScreen(driverId: '');
       },
       '/fuel-card/assign': (context) => const AssignFuelCardScreen(),
     };

@@ -50,6 +50,8 @@ dependencies:
   qr_flutter: ^4.1.0
   flutter_riverpod: ^2.6.1
   pdf: ^3.11.3
+  timezone: ^0.10.1
+  country_codes: ^3.3.0
 
 dev_dependencies:
   flutter_test:
