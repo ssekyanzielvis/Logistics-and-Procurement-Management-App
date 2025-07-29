@@ -13,6 +13,7 @@ class AppConstants {
 
   // User Roles
   static const String adminRole = 'admin';
+  static const String otherAdminRole = 'other_admin'; // Added missing role
   static const String clientRole = 'client';
   static const String driverRole = 'driver';
 
