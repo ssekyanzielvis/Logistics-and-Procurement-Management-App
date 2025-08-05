@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logistics/providers/auth_provider.dart';
+import 'package:logistics/providers/user_support_dashboard.dart';
 import 'package:logistics/screens/client/chat_list_screen.dart';
 import 'package:logistics/screens/client/create_consignment_screen.dart';
 import 'package:logistics/screens/client/my_consignments_screen.dart';
@@ -293,7 +294,12 @@ class ClientHomeScreen extends ConsumerWidget {
                   Icons.support_agent,
                   Colors.red,
                   () {
-                    // Navigate to support
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const UserSupportDashboard(),
+                      ),
+                    );
                   },
                   iconSize,
                   titleFontSize,
