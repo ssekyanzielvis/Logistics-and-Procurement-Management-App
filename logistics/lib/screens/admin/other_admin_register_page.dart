@@ -358,7 +358,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage> {
                                     border: Border.all(color: borderColor),
                                   ),
                                   child: DropdownButtonFormField<String>(
-                                    value: _selectedCountryCode,
+                                    initialValue: _selectedCountryCode,
                                     isExpanded: true,
                                     decoration: const InputDecoration(
                                       border: InputBorder.none,

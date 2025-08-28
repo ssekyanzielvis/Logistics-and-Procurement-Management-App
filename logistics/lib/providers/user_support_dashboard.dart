@@ -238,16 +238,16 @@ class _UserSupportDashboardState extends State<UserSupportDashboard>
   }
 
   Widget _buildSupportSection() {
-    final _nameController = TextEditingController();
-    final _emailController = TextEditingController();
-    final _messageController = TextEditingController();
-    String? _errorMessage;
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    final messageController = TextEditingController();
+    String? errorMessage;
 
-    void _submitSupportRequest() {
-      if (_nameController.text.isEmpty ||
-          _emailController.text.isEmpty ||
-          _messageController.text.isEmpty) {
-        setState(() => _errorMessage = 'Please fill all fields');
+    void submitSupportRequest() {
+      if (nameController.text.isEmpty ||
+          emailController.text.isEmpty ||
+          messageController.text.isEmpty) {
+        setState(() => errorMessage = 'Please fill all fields');
         return;
       }
       // Simulate submission
@@ -259,10 +259,10 @@ class _UserSupportDashboardState extends State<UserSupportDashboard>
           backgroundColor: Colors.green,
         ),
       );
-      _nameController.clear();
-      _emailController.clear();
-      _messageController.clear();
-      setState(() => _errorMessage = null);
+      nameController.clear();
+      emailController.clear();
+      messageController.clear();
+      setState(() => errorMessage = null);
     }
 
     return SingleChildScrollView(
@@ -279,7 +279,7 @@ class _UserSupportDashboardState extends State<UserSupportDashboard>
             ),
           ),
           const SizedBox(height: 16),
-          if (_errorMessage != null)
+          if (errorMessage != null)
             Container(
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 16),
@@ -293,21 +293,21 @@ class _UserSupportDashboardState extends State<UserSupportDashboard>
                   const Icon(Icons.error, color: Colors.red),
                   const SizedBox(width: 8),
                   Text(
-                    _errorMessage!,
+                    errorMessage!,
                     style: const TextStyle(color: Colors.red),
                   ),
                 ],
               ),
             ),
           _buildTextField(
-            controller: _nameController,
+            controller: nameController,
             label: 'Name',
             hint: 'Your Name',
             icon: Icons.person,
           ),
           const SizedBox(height: 16),
           _buildTextField(
-            controller: _emailController,
+            controller: emailController,
             label: 'Email',
             hint: 'your.email@example.com',
             icon: Icons.email,
@@ -315,7 +315,7 @@ class _UserSupportDashboardState extends State<UserSupportDashboard>
           ),
           const SizedBox(height: 16),
           _buildTextField(
-            controller: _messageController,
+            controller: messageController,
             label: 'Message',
             hint: 'Describe your issue...',
             icon: Icons.message,
@@ -323,7 +323,7 @@ class _UserSupportDashboardState extends State<UserSupportDashboard>
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _submitSupportRequest,
+            onPressed: submitSupportRequest,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6C5CE7),
               foregroundColor: Colors.white,

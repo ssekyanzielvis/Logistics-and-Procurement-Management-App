@@ -378,7 +378,7 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _selectedFilter,
+              initialValue: _selectedFilter,
               decoration: const InputDecoration(
                 labelText: 'Transaction Type',
                 border: OutlineInputBorder(),
@@ -525,7 +525,7 @@ class _FuelTransactionsScreenState extends State<FuelTransactionsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  value: _selectedFilter,
+                  initialValue: _selectedFilter,
                   decoration: const InputDecoration(
                     labelText: 'Transaction Type',
                     border: OutlineInputBorder(),

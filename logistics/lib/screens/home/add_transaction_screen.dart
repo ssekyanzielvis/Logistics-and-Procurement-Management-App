@@ -142,7 +142,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen>
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _selectedFuelCardId,
+              initialValue: _selectedFuelCardId,
               decoration: const InputDecoration(
                 labelText: 'Fuel Card',
                 border: OutlineInputBorder(),
