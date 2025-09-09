@@ -59,9 +59,11 @@ class _TrackConsignmentScreenState extends State<TrackConsignmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
+    return Material(
+      color: Colors.transparent,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
@@ -88,34 +90,34 @@ class _TrackConsignmentScreenState extends State<TrackConsignmentScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _trackConsignment,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppConstants.primaryColor,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _trackConsignment,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.primaryColor,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child:
-                    _isLoading
-                        ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+                  child:
+                      _isLoading
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : const Text(
+                            'Track',
+                            style: TextStyle(color: Colors.white),
                           ),
-                        )
-                        : const Text(
-                          'Track',
-                          style: TextStyle(color: Colors.white),
-                        ),
-              ),
+                ),
             ],
           ),
 
@@ -124,6 +126,7 @@ class _TrackConsignmentScreenState extends State<TrackConsignmentScreen> {
           // Results
           Expanded(child: _buildTrackingResults()),
         ],
+        ),
       ),
     );
   }
