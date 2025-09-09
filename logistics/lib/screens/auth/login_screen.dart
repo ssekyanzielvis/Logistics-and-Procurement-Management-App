@@ -5,6 +5,8 @@ import 'package:logistics/screens/client/client_dashboard.dart';
 import 'package:logistics/screens/driver/driver_dashboard.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
+import 'package:logistics/utils/supabase_error_handler.dart';
+import 'package:logistics/widgets/rate_limit_helper.dart';
 import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -78,12 +80,29 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login failed: $e'),
-            backgroundColor: AppConstants.errorColor,
-          ),
-        );
+        String errorMessage = e.toString();
+        
+        // Clean up the error message to remove "Exception: " prefix
+        if (errorMessage.startsWith('Exception: ')) {
+          errorMessage = errorMessage.substring(11);
+        }
+        
+        // Check if it's a rate limit error and show appropriate UI
+        if (SupabaseErrorHandler.isRateLimitError(e)) {
+          RateLimitUtils.showRateLimitDialog(
+            context,
+            waitTime: SupabaseErrorHandler.getRateLimitWaitTime(e),
+            message: errorMessage,
+          );
+        } else {
+          // Show regular error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: AppConstants.errorColor,
+            ),
+          );
+        }
       }
     }
   }

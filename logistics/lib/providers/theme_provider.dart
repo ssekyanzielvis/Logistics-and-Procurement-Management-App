@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../theme/professional_theme.dart';
 import 'settings_provider.dart';
 
 class AppThemeData {
@@ -129,8 +130,8 @@ final appThemeProvider = Provider<ThemeData>((ref) {
       (settings.themeMode == ThemeMode.system && brightness == Brightness.dark);
 
   return isDark
-      ? AppThemeData.darkTheme(settings.primaryColor)
-      : AppThemeData.lightTheme(settings.primaryColor);
+      ? ProfessionalTheme.darkTheme
+      : ProfessionalTheme.lightTheme;
 });
 
 final platformBrightnessProvider = Provider<Brightness>((ref) {

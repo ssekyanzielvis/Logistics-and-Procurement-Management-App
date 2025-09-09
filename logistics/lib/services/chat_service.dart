@@ -231,11 +231,11 @@ class ChatService {
           '${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
       final imagePath = '$currentUserId/$fileName';
 
-      await _supabase.storage.from('chat_images').upload(imagePath, imageFile);
+      await _supabase.storage.from('chat-attachments').upload(imagePath, imageFile);
 
       // Get public URL
       final imageUrl = _supabase.storage
-          .from('chat_images')
+          .from('chat-attachments')
           .getPublicUrl(imagePath);
 
       // Send message with image

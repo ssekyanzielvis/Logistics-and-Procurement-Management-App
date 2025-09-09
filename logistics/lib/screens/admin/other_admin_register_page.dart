@@ -84,10 +84,10 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage> {
       final fileName =
           'admin_${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
       await _supabase.storage
-          .from('admin-profile-images')
+          .from('profile-images')
           .upload(fileName, _profileImage!);
       return _supabase.storage
-          .from('admin-profile-images')
+          .from('profile-images')
           .getPublicUrl(fileName);
     } catch (e) {
       debugPrint('Profile image upload failed: $e');

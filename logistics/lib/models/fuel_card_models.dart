@@ -259,6 +259,7 @@ class FuelTransaction {
   final DateTime transactionDate;
   final String? authorizationCode;
   final String? receiptNumber;
+  final String? receiptUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -276,6 +277,7 @@ class FuelTransaction {
     required this.transactionDate,
     this.authorizationCode,
     this.receiptNumber,
+    this.receiptUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -298,6 +300,7 @@ class FuelTransaction {
       transactionDate: DateTime.parse(json['transaction_date'] as String),
       authorizationCode: json['authorization_code'] as String?,
       receiptNumber: json['receipt_number'] as String?,
+      receiptUrl: json['receipt_url'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -318,6 +321,7 @@ class FuelTransaction {
       'transaction_date': transactionDate.toIso8601String(),
       'authorization_code': authorizationCode,
       'receipt_number': receiptNumber,
+      'receipt_url': receiptUrl,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };

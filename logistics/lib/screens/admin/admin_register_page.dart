@@ -85,7 +85,7 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
       final file = File(_profileImage!.path);
 
       await _supabase.storage
-          .from('admin-profile-images')
+          .from('profile-images')
           .upload(
             fileName,
             file,
@@ -96,7 +96,7 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
           );
 
       return _supabase.storage
-          .from('admin-profile-images')
+          .from('profile-images')
           .getPublicUrl(fileName);
     } catch (e) {
       debugPrint('Profile image upload failed: $e');

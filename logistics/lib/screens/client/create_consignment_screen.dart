@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:logistics/services/auth_service.dart';
-import 'package:logistics/utils/constants.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'package:uuid/uuid.dart';
+import '../../providers/auth_provider.dart';
+import '../../widgets/back_button_widget.dart';
+import '../../widgets/professional_widgets.dart';
 
-class CreateConsignmentScreen extends StatefulWidget {
+class CreateConsignmentScreen extends ConsumerStatefulWidget {
   const CreateConsignmentScreen({super.key});
 
   @override
-  State<CreateConsignmentScreen> createState() =>
+  ConsumerState<CreateConsignmentScreen> createState() =>
       _CreateConsignmentScreenState();
 }
 
-class _CreateConsignmentScreenState extends State<CreateConsignmentScreen> {
+class _CreateConsignmentScreenState extends ConsumerState<CreateConsignmentScreen> {
   final _formKey = GlobalKey<FormState>();
   final _pickupController = TextEditingController();
   final _deliveryController = TextEditingController();
@@ -42,8 +42,8 @@ class _CreateConsignmentScreenState extends State<CreateConsignmentScreen> {
       });
 
       try {
-        final user =
-            Provider.of<AuthService>(context, listen: false).currentUser;
+        final authService = ref.read(authServiceProvider);
+        final user = authService.currentUser;
         const uuid = Uuid();
 
         final consignmentData = {
@@ -53,7 +53,7 @@ class _CreateConsignmentScreenState extends State<CreateConsignmentScreen> {
           'delivery_location': _deliveryController.text.trim(),
           'item_description': _itemDescriptionController.text.trim(),
           'weight': double.parse(_weightController.text),
-          'status': AppConstants.statusPending,
+          'status': 'pending',
           'special_instructions':
               _instructionsController.text.trim().isEmpty
                   ? null
@@ -65,11 +65,10 @@ class _CreateConsignmentScreenState extends State<CreateConsignmentScreen> {
         await _supabase.from('consignments').insert(consignmentData);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Consignment created successfully!'),
-              backgroundColor: AppConstants.secondaryColor,
-            ),
+          ProfessionalSnackBar.show(
+            context,
+            'Consignment created successfully!',
+            type: SnackBarType.success,
           );
 
           // Clear form
@@ -82,11 +81,10 @@ class _CreateConsignmentScreenState extends State<CreateConsignmentScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error creating consignment: $e'),
-              backgroundColor: AppConstants.errorColor,
-            ),
+          ProfessionalSnackBar.show(
+            context,
+            'Error creating consignment: $e',
+            type: SnackBarType.error,
           );
         }
       } finally {
@@ -99,20 +97,34 @@ class _CreateConsignmentScreenState extends State<CreateConsignmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Create New Consignment',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-
-              const SizedBox(height: 20),
+    return Scaffold(
+      appBar: const CustomAppBar(
+        title: 'Create Consignment',
+      ),
+      body: _isLoading 
+        ? const ProfessionalLoadingWidget(
+            message: 'Creating consignment...',
+          )
+        : Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Card(
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Consignment Details',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 20),
 
               // Pickup Location
               TextFormField(
@@ -230,7 +242,6 @@ class _CreateConsignmentScreenState extends State<CreateConsignmentScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _createConsignment,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.primaryColor,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -249,10 +260,15 @@ class _CreateConsignmentScreenState extends State<CreateConsignmentScreen> {
                           ),
                 ),
               ),
-            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
     );
   }
 }

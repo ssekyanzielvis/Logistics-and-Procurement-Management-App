@@ -28,7 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Constants
   static const String _defaultRole = 'No role';
-  static const String _profileImagesBucket = 'profile_images';
+  static const String _profileImagesBucket = 'profile-images';
   static const int _signedUrlExpirySeconds = 3600;
 
   @override

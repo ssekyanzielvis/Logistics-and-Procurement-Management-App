@@ -8,6 +8,7 @@ class ConsignmentModel {
   final double weight;
   final String status;
   final String? specialInstructions;
+  final String? documentUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -21,6 +22,7 @@ class ConsignmentModel {
     required this.weight,
     required this.status,
     this.specialInstructions,
+    this.documentUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -36,6 +38,7 @@ class ConsignmentModel {
       weight: json['weight'].toDouble(),
       status: json['status'],
       specialInstructions: json['special_instructions'],
+      documentUrl: json['document_url'],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );
@@ -52,6 +55,7 @@ class ConsignmentModel {
       'weight': weight,
       'status': status,
       'special_instructions': specialInstructions,
+      'document_url': documentUrl,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };

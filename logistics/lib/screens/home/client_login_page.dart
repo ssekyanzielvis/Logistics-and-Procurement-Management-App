@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:logistics/screens/client/client_dashboard.dart';
-import 'package:logistics/screens/driver/driver_dashboard.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/auth_provider.dart';
+import '../../widgets/professional_widgets.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage>
+class _LoginPageState extends ConsumerState<LoginPage>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -71,49 +72,37 @@ class _LoginPageState extends State<LoginPage>
         _isLoading = true;
       });
 
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        final authService = ref.read(authServiceProvider);
+        final role = await authService.signIn(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      // Check credentials
-      const String allowedEmail = "abdulssekyanzi@gmail.com";
-      const String allowedPassword = "Su4at3#0";
-
-      if (_emailController.text == allowedEmail &&
-          _passwordController.text == allowedPassword) {
-        // Navigate to appropriate dashboard based on selected role
-        if (_selectedRole == 'Client') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const ClientDashboard()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const DriverDashboard()),
+        if (role != null) {
+          // Navigation will be handled by AuthWrapper in main.dart
+          // based on the user's role
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/',
+            (route) => false,
           );
         }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login successful as $_selectedRole'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid email or password'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+      } catch (e) {
+        if (mounted) {
+          ProfessionalSnackBar.show(
+            context,
+            'Login failed: ${e.toString()}',
+            type: SnackBarType.error,
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }

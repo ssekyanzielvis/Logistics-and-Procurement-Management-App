@@ -1,18 +1,23 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:logistics/services/auth_service.dart';
-import 'package:logistics/utils/constants.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../providers/auth_provider.dart';
+import '../../utils/validation_utils.dart';
+import '../../widgets/back_button_widget.dart';
+import '../../widgets/professional_widgets.dart';
+import '../../widgets/rate_limit_helper.dart';
+import '../../utils/supabase_error_handler.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> with ValidationMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -22,9 +27,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
   final SupabaseClient _supabase = Supabase.instance.client;
-  final AuthService _authService = AuthService();
 
-  String _selectedRole = AppConstants.clientRole;
+  String _selectedRole = 'client';
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _termsAccepted = false;
@@ -35,7 +39,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   static const Color secondaryColor = Color(0xFF4B5563);
   static const Color backgroundColor = Color(0xFFF9FAFB);
   static const Color errorColor = Color(0xFFDC2626);
-  static const Color successColor = Color(0xFF16A34A);
   static const Color borderColor = Color(0xFFD1D5DB);
 
   @override
@@ -63,12 +66,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to pick image: $e'),
-            backgroundColor: errorColor,
-            duration: const Duration(seconds: 3),
-          ),
+        ProfessionalSnackBar.show(
+          context,
+          'Failed to pick image: $e',
+          type: SnackBarType.error,
         );
       }
     }
@@ -78,21 +79,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_profileImage == null) return null;
 
     try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('User not authenticated');
+      
       final fileExtension = _profileImage!.path.split('.').last;
-      final fileName =
-          'user_${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
+      final fileName = '${user.id}/profile_${DateTime.now().millisecondsSinceEpoch}.$fileExtension';
+      
       await _supabase.storage
-          .from('user-profile-images')
+          .from('profile-images')
           .upload(fileName, _profileImage!);
       return _supabase.storage
-          .from('user-profile-images')
+          .from('profile-images')
           .getPublicUrl(fileName);
     } catch (e) {
       debugPrint('Profile image upload failed: $e');
-      String errorMessage =
-          'Profile image upload failed. Please try another image.';
+      String errorMessage = 'Profile image upload failed. Please try another image.';
       if (e is StorageException) {
-        errorMessage = e.message; // Provide specific Supabase error message
+        errorMessage = e.message;
       }
       throw Exception(errorMessage);
     }
@@ -102,12 +105,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (!_termsAccepted) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please accept the terms and conditions'),
-            backgroundColor: errorColor,
-            duration: Duration(seconds: 3),
-          ),
+        ProfessionalSnackBar.show(
+          context,
+          'Please accept the terms and conditions',
+          type: SnackBarType.warning,
         );
       }
       return;
@@ -123,7 +124,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         profileImageUrl = await _uploadProfileImage();
       }
 
-      final response = await _authService.signUp(
+      final authService = ref.read(authServiceProvider);
+      final response = await authService.signUp(
         _emailController.text.trim(),
         _passwordController.text,
         fullName: _fullNameController.text.trim(),
@@ -133,24 +135,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (mounted && response.user != null) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account created successfully!'),
-            backgroundColor: successColor,
-            duration: Duration(seconds: 3),
-          ),
+        ProfessionalSnackBar.show(
+          context,
+          'Account created successfully! Please check your email to verify your account.',
+          type: SnackBarType.success,
         );
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Registration failed: ${e.toString()}'),
-            backgroundColor: errorColor,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        String errorMessage = e.toString();
+        
+        // Clean up the error message to remove "Exception: " prefix
+        if (errorMessage.startsWith('Exception: ')) {
+          errorMessage = errorMessage.substring(11);
+        }
+        
+        // Check if it's a rate limit error and show appropriate UI
+        if (SupabaseErrorHandler.isRateLimitError(e)) {
+          RateLimitUtils.showRateLimitDialog(
+            context,
+            waitTime: SupabaseErrorHandler.getRateLimitWaitTime(e),
+            message: errorMessage,
+          );
+        } else {
+          // Show regular error message
+          ProfessionalSnackBar.show(
+            context,
+            errorMessage,
+            type: SnackBarType.error,
+          );
+        }
       }
     } finally {
       if (mounted) {
@@ -165,13 +180,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        title: const Text('Create Account'),
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
+      appBar: const CustomAppBar(
+        title: 'Create Account',
       ),
-      body: SafeArea(
+      body: _isLoading
+          ? const ProfessionalLoadingWidget(
+              message: 'Creating your account...',
+            )
+          : SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.all(
             MediaQuery.of(context).size.width * 0.06,
@@ -265,15 +281,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           controller: _fullNameController,
                           label: 'Full Name',
                           icon: Icons.person_outline,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your full name';
-                            }
-                            if (value.length < 3) {
-                              return 'Name must be at least 3 characters';
-                            }
-                            return null;
-                          },
+                          validator: validateFullName,
                         ),
                         const SizedBox(height: 16),
 
@@ -283,17 +291,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           label: 'Email',
                           icon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your email';
-                            }
-                            if (!RegExp(
-                              r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                            ).hasMatch(value)) {
-                              return 'Please enter a valid email';
-                            }
-                            return null;
-                          },
+                          validator: validateEmail,
                         ),
                         const SizedBox(height: 16),
 
@@ -303,17 +301,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           label: 'Phone Number',
                           icon: Icons.phone_outlined,
                           keyboardType: TextInputType.phone,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your phone number';
-                            }
-                            if (!RegExp(
-                              r'^\+?[\d\s\-\(\)]{10,}$',
-                            ).hasMatch(value)) {
-                              return 'Please enter a valid phone number';
-                            }
-                            return null;
-                          },
+                          validator: validatePhone,
                         ),
                         const SizedBox(height: 16),
 
@@ -378,15 +366,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                               ),
                               items: [
-                                DropdownMenuItem(
-                                  key: const Key('client_role'),
-                                  value: AppConstants.clientRole,
-                                  child: const Text('Client'),
+                                const DropdownMenuItem(
+                                  key: Key('client_role'),
+                                  value: 'client',
+                                  child: Text('Client'),
                                 ),
-                                DropdownMenuItem(
-                                  key: const Key('driver_role'),
-                                  value: AppConstants.driverRole,
-                                  child: const Text('Driver'),
+                                const DropdownMenuItem(
+                                  key: Key('driver_role'),
+                                  value: 'driver',
+                                  child: Text('Driver'),
                                 ),
                               ],
                               onChanged: (value) {
@@ -413,20 +401,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           label: 'Password',
                           icon: Icons.lock_outline,
                           obscureText: _obscurePassword,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter a password';
-                            }
-                            if (value.length < 8) {
-                              return 'Password must be at least 8 characters';
-                            }
-                            if (!RegExp(
-                              r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9]).{8,}$',
-                            ).hasMatch(value)) {
-                              return 'Must contain uppercase, lowercase, and numbers';
-                            }
-                            return null;
-                          },
+                          validator: validatePassword,
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
@@ -458,15 +433,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           label: 'Confirm Password',
                           icon: Icons.lock_outline,
                           obscureText: _obscureConfirmPassword,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please confirm your password';
-                            }
-                            if (value != _passwordController.text) {
-                              return 'Passwords do not match';
-                            }
-                            return null;
-                          },
+                          validator: (value) => validateConfirmPassword(value, _passwordController.text),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscureConfirmPassword

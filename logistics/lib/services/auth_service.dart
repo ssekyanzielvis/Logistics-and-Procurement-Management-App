@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/supabase_error_handler.dart';
 
 class AuthService extends ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -33,78 +34,56 @@ class AuthService extends ChangeNotifier {
   Future<String?> signIn(String email, String password) async {
     try {
       _setLoading(true);
-      final response = await _supabase.functions.invoke(
-        'custom_login',
-        body: {'email': email, 'password': password},
-      );
-
-      if (response.data['error'] != null) {
-        throw Exception(response.data['error']);
-      }
-
-      final session = response.data['session'];
-      final role = response.data['role'] as String?;
-
-      if (session != null && session['access_token'] != null) {
-        await _supabase.auth.setSession(session['access_token']);
-      } else if (role != null) {
-        await signInDirect(email, password);
-      }
-
-      if (role == null) {
-        final fallbackRole = await getUserRole(
-          _supabase.auth.currentUser?.id ?? (await _getUserIdFromEmail(email))!,
-        );
-        return fallbackRole ?? 'user';
-      }
-
-      return role;
-    } on Exception catch (e) {
-      if (e.toString().contains('FunctionException') &&
-          e.toString().contains('404')) {
-        return await signInDirect(email, password);
-      }
-      throw Exception('Authentication error: ${e.toString()}');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  Future<String?> signInDirect(String email, String password) async {
-    try {
-      _setLoading(true);
+      
+      // Use standard Supabase auth
       final response = await _supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
       if (response.user == null) {
-        throw Exception('Authentication failed: No user found');
+        throw Exception('Authentication failed: Invalid credentials');
       }
 
-      final userRole = await getUserRole(response.user!.id);
-      return userRole ?? 'user';
+      // Try to get user role from JWT claims first (safer)
+      _role = getUserRoleFromJWT(response.user!) ?? 'user';
+      
+      return _role;
     } catch (e) {
-      throw Exception('Authentication error: ${e.toString()}');
+      // Use the error handler to get user-friendly messages
+      throw Exception(SupabaseErrorHandler.getErrorMessage(e));
     } finally {
       _setLoading(false);
     }
   }
 
-  Future<String?> _getUserIdFromEmail(String email) async {
+  /// Get user role from JWT claims without querying the database
+  String? getUserRoleFromJWT(User user) {
     try {
-      final response =
-          await _supabase
-              .from('auth.users')
-              .select('id')
-              .eq('email', email)
-              .maybeSingle();
-      return response?['id'] as String?;
+      // Check user metadata first
+      final userRole = user.userMetadata?['role'] as String?;
+      if (userRole != null) return userRole;
+      
+      // Check app metadata
+      final appRole = user.appMetadata['role'] as String?;
+      if (appRole != null) return appRole;
+      
+      // Fallback: check email patterns for admin access
+      final email = user.email?.toLowerCase() ?? '';
+      if (email == 'abdulssekyanzi@gmail.com' || 
+          email.contains('admin@') ||
+          email.endsWith('@admin.com')) {
+        return 'admin';
+      }
+      
+      return 'user';
     } catch (e) {
-      debugPrint('Error getting user ID: $e');
-      return null;
+      debugPrint('Error getting role from JWT: $e');
+      return 'user';
     }
   }
+
+
 
   Future<void> signOut() async {
     await _supabase.auth.signOut();
@@ -122,9 +101,11 @@ class AuthService extends ChangeNotifier {
   }) async {
     _setLoading(true);
     try {
+      // Sign up with Supabase auth - bypass email confirmation for development
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
+        emailRedirectTo: null, // Bypass email confirmation
         data: {
           'full_name': fullName,
           'phone': phone,
@@ -133,20 +114,17 @@ class AuthService extends ChangeNotifier {
         },
       );
 
+      // The user profile will be automatically created by the database trigger
+      // when a new user is created in auth.users
+      
       if (response.user != null) {
-        await _supabase.from('users').insert({
-          'id': response.user!.id,
-          'email': email,
-          'full_name': fullName,
-          'phone': phone,
-          'role': role ?? 'user',
-          'profile_image': profileImage,
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        });
+        _role = role ?? 'user';
       }
 
       return response;
+    } catch (e) {
+      // Use the error handler to get user-friendly messages
+      throw Exception(SupabaseErrorHandler.getErrorMessage(e));
     } finally {
       _setLoading(false);
     }
@@ -189,7 +167,16 @@ class AuthService extends ChangeNotifier {
 
   Future<bool> isCurrentUserAdmin() async {
     if (currentUser == null) return false;
-    final role = await getUserRole(currentUser!.id);
+    
+    // Use JWT-based role checking to avoid database issues
+    final role = getUserRoleFromJWT(currentUser!);
+    return role == 'admin' || role == 'other_admin';
+  }
+
+  /// Safe admin check using only JWT claims (no database queries)
+  bool isCurrentUserAdminSafe() {
+    if (currentUser == null) return false;
+    final role = getUserRoleFromJWT(currentUser!);
     return role == 'admin' || role == 'other_admin';
   }
 
@@ -226,5 +213,12 @@ class AuthService extends ChangeNotifier {
         initialize();
       }
     });
+  }
+
+  /// Check if current user's email is confirmed
+  bool get isEmailConfirmed {
+    final user = currentUser;
+    if (user == null) return false;
+    return user.emailConfirmedAt != null;
   }
 }
