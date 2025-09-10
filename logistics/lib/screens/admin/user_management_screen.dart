@@ -96,6 +96,23 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Back Button and Title Row
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back',
+              ),
+              const Expanded(
+                child: Text(
+                  'Manage Users',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           // Filter Chips
           Row(
             children: [

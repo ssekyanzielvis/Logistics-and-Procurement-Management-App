@@ -66,9 +66,21 @@ class _TrackConsignmentScreenState extends State<TrackConsignmentScreen> {
         child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Track Consignment',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          // Back Button and Title Row
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back',
+              ),
+              const Expanded(
+                child: Text(
+                  'Track Consignment',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
           ),
 
           const SizedBox(height: 20),
