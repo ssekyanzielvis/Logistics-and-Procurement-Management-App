@@ -14,28 +14,26 @@ class LoginNotifier extends StateNotifier<LoginState> {
   LoginNotifier(this._authService) : super(LoginState.initial());
 
   Future<void> login(String email, String password) async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, errorMessage: null, isSuccess: false);
     try {
-      // Check hardcoded credentials
-      const String allowedEmail = "abdulssekyanzi@gmail.com";
-      const String allowedPassword = "Su4at3#0";
+      // Sign in with Supabase
+      final role = await _authService.signIn(email, password);
 
-      await Future.delayed(const Duration(seconds: 1));
+      // Allow only other_admin (and admin as a privileged superset) into this dashboard
+      final normalized = (role ?? 'user').toLowerCase();
+      final allowed = normalized == 'other_admin' || normalized == 'admin';
 
-      if (email == allowedEmail && password == allowedPassword) {
-        state = state.copyWith(
-          isLoading: false,
-          isSuccess: true,
-          errorMessage: null,
-        );
+      if (allowed) {
+        state = state.copyWith(isLoading: false, isSuccess: true, errorMessage: null);
       } else {
         state = state.copyWith(
           isLoading: false,
-          errorMessage: 'Invalid email or password',
+          isSuccess: false,
+          errorMessage: "You don't have Other Admin access (role: ${role ?? 'unknown'}).",
         );
       }
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      state = state.copyWith(isLoading: false, isSuccess: false, errorMessage: e.toString());
     }
   }
 
@@ -190,6 +188,14 @@ class _OtherAdminLoginPageState extends ConsumerState<OtherAdminLoginPage>
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const OtherAdminDashboard()),
+      );
+    } else if (mounted && state.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.errorMessage!),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red[600],
+        ),
       );
     }
   }

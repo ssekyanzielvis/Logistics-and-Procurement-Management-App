@@ -162,12 +162,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         final titleSize = w < 360 ? 16.0 : 18.0;
         final descSize = w < 360 ? 12.0 : 14.0;
         final padding = w < 360 ? 12.0 : 16.0;
+  final isNarrow = w < 360;
 
         return Semantics(
           button: true,
           label: title,
           child: Container(
             margin: const EdgeInsets.symmetric(vertical: 8),
+            constraints: BoxConstraints(minHeight: isNarrow ? 112 : 88),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
@@ -184,57 +186,53 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               onTap: onTap,
               child: Padding(
                 padding: EdgeInsets.all(padding),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: iconBox,
-                      height: iconBox,
-                      decoration: BoxDecoration(
-                        color: iconBg,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(icon, color: iconColor, size: iconBox * 0.5),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
+                child: isNarrow
+                    ? Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: titleSize,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF111827),
-                              letterSpacing: 0.2,
-                            ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: iconBox,
+                                height: iconBox,
+                                decoration: BoxDecoration(
+                                  color: iconBg,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(icon,
+                                    color: iconColor, size: iconBox * 0.5),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: titleSize,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF111827),
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right_rounded,
+                                  color: Color(0xFF9CA3AF)),
+                            ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 8),
+                          // Allow full wrap on small screens to show all details
                           Text(
                             description,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: descSize,
                               color: const Color(0xFF6B7280),
-                              height: 1.3,
+                              height: 1.35,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(minWidth: 60),
-                      child: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        alignment: WrapAlignment.end,
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
+                          const SizedBox(height: 10),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
@@ -255,13 +253,87 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               ),
                             ),
                           ),
-                          const Icon(Icons.chevron_right_rounded,
-                              color: Color(0xFF9CA3AF)),
+                        ],
+                      )
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: iconBox,
+                            height: iconBox,
+                            decoration: BoxDecoration(
+                              color: iconBg,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(icon,
+                                color: iconColor, size: iconBox * 0.5),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: titleSize,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF111827),
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  description,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: descSize,
+                                    color: const Color(0xFF6B7280),
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(minWidth: 60),
+                            child: Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              alignment: WrapAlignment.end,
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: badgeBg,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    badgeText,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: badgeFg,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(Icons.chevron_right_rounded,
+                                    color: Color(0xFF9CA3AF)),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
