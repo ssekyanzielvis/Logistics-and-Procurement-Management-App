@@ -128,9 +128,10 @@ class AdminHomeScreen extends ConsumerWidget {
 
     return Padding(
       padding: EdgeInsets.all(cardPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Container(
             width: double.infinity,
             padding: EdgeInsets.all(cardPadding * 1.5),
@@ -193,15 +194,15 @@ class AdminHomeScreen extends ConsumerWidget {
             ),
           ),
           SizedBox(height: cardPadding),
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: cardPadding,
-              mainAxisSpacing: cardPadding,
-              padding: EdgeInsets.all(cardPadding),
-              childAspectRatio: childAspectRatio,
-              shrinkWrap: true,
-              children: [
+          GridView.count(
+            crossAxisCount: 2,
+            crossAxisSpacing: cardPadding,
+            mainAxisSpacing: cardPadding,
+            padding: EdgeInsets.all(cardPadding),
+            childAspectRatio: childAspectRatio,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
                 FutureBuilder<int>(
                   future: dashboardService.getTotalUsers(),
                   builder:
@@ -324,20 +325,26 @@ class AdminHomeScreen extends ConsumerWidget {
                   'Delivery Management',
                   Icons.delivery_dining,
                   Colors.deepOrange,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DeliveryScreen(driverId: ''),
-                    ),
-                  ),
+                  () {
+                    // For admin users, we should show all delivery notes or use admin-specific view
+                    // For now, use the admin's user ID
+                    final user = Supabase.instance.client.auth.currentUser;
+                    final adminId = user?.id ?? '';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DeliveryScreen(driverId: adminId),
+                      ),
+                    );
+                  },
                   iconSize,
                   titleFontSize,
                   cardPadding,
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

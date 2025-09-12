@@ -73,10 +73,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final userData = await _fetchUserData(userId);
       if (userData != null && mounted) {
         _populateFormFields(userData);
-        await _loadProfileImage(userData['avatar_url']);
+        
+        // Only try to load avatar if the field exists in the response
+        if (userData.containsKey('avatar_url')) {
+          await _loadProfileImage(userData['avatar_url']);
+        }
       }
     } catch (e) {
       if (mounted) {
+        debugPrint('Profile load error: $e');
         _showErrorSnackBar('Failed to load profile: ${_getErrorMessage(e)}');
       }
     } finally {
@@ -91,14 +96,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<Map<String, dynamic>?> _fetchUserData(String userId) async {
-    final response =
-        await _supabase
-            .from('users')
-            .select('full_name, email, phone, role, avatar_url')
-            .eq('id', userId)
-            .maybeSingle();
-
-    return response;
+    try {
+      // First try to get all columns including avatar_url
+      final response =
+          await _supabase
+              .from('users')
+              .select('full_name, email, phone, role, avatar_url')
+              .eq('id', userId)
+              .maybeSingle();
+      return response;
+    } catch (e) {
+      // If that fails, try without avatar_url (which might not exist in the database)
+      if (e.toString().contains('does not exist')) {
+        try {
+          final response =
+              await _supabase
+                  .from('users')
+                  .select('full_name, email, phone, role')
+                  .eq('id', userId)
+                  .maybeSingle();
+          return response;
+        } catch (innerE) {
+          debugPrint('Error fetching user data: $innerE');
+          rethrow;
+        }
+      } else {
+        debugPrint('Error fetching user data: $e');
+        rethrow;
+      }
+    }
   }
 
   void _populateFormFields(Map<String, dynamic> userData) {
@@ -207,12 +233,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'updated_at': DateTime.now().toIso8601String(),
       };
 
+      // Only add avatar_url if we have a new one and if the column exists in the database
       if (avatarFileName != null) {
-        updates['avatar_url'] = avatarFileName;
+        try {
+          // Try to check if the avatar_url column exists
+          await _supabase.rpc('column_exists', 
+              params: {'table_name': 'users', 'column_name': 'avatar_url'})
+              .then((exists) {
+                if (exists == true) {
+                  updates['avatar_url'] = avatarFileName;
+                } else {
+                  debugPrint('avatar_url column does not exist, skipping update');
+                }
+              });
+        } catch (e) {
+          // If the RPC doesn't exist or fails, we'll try adding the field anyway
+          // and handle any errors that occur during the update
+          debugPrint('Error checking for avatar_url column: $e');
+          updates['avatar_url'] = avatarFileName;
+        }
       }
 
       // Update user data
-      await _supabase.from('users').update(updates).eq('id', userId);
+      try {
+        await _supabase.from('users').update(updates).eq('id', userId);
+      } catch (e) {
+        // If the update fails because of avatar_url, try again without it
+        if (e.toString().contains('avatar_url') && avatarFileName != null) {
+          updates.remove('avatar_url');
+          await _supabase.from('users').update(updates).eq('id', userId);
+          
+          // Show a warning about the missing avatar column
+          _showWarningSnackBar('Profile updated but avatar could not be saved: Database column missing');
+          return;
+        } else {
+          // If it's some other error, rethrow it
+          rethrow;
+        }
+      }
 
       if (mounted) {
         _showSuccessSnackBar('Profile updated successfully!');
@@ -236,6 +294,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showWarningSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.orange,
+        duration: const Duration(seconds: 5),
         behavior: SnackBarBehavior.floating,
       ),
     );

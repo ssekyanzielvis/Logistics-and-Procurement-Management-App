@@ -220,11 +220,17 @@ class FuelCardService {
   // Driver Assignments
   Future<List<FuelCardAssignment>> getAllAssignments({String? driverId}) async {
     try {
+      // Check for null or empty driverId
+      if (driverId != null && driverId.isEmpty) {
+        // Return empty list instead of making an invalid query
+        return [];
+      }
+      
       var query = _supabase
           .from('fuel_card_assignments')
           .select('*, fuel_cards(*)');
 
-      if (driverId != null) {
+      if (driverId != null && driverId.isNotEmpty) {
         query = query.eq('driver_id', driverId);
       }
 

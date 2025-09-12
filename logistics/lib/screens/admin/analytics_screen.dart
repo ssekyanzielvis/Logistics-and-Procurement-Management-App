@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -22,6 +24,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     'completed_consignments': 0,
     'cancelled_consignments': 0,
   };
+  
+  // Method to check internet connectivity
+  Future<bool> _checkInternetConnection() async {
+    try {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult == ConnectivityResult.none) {
+        return false;
+      }
+      
+      // Do an actual internet check by trying to resolve a DNS
+      try {
+        final result = await InternetAddress.lookup('google.com');
+        return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+      } on SocketException catch (_) {
+        return false;
+      }
+    } catch (e) {
+      // If we can't check connectivity for some reason, assume there is internet
+      return true;
+    }
+  }
 
   @override
   void initState() {
@@ -34,6 +57,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       setState(() {
         _isLoading = true;
       });
+
+      // Check internet connectivity first
+      bool hasInternetConnection = await _checkInternetConnection();
+      if (!hasInternetConnection && mounted) {
+        throw Exception('No internet connection. Please check your network settings and try again.');
+      }
 
       // Load user statistics
       final usersResponse = await _supabase.from('users').select('role');
@@ -69,8 +98,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error loading analytics: $e'),
+            content: Text('Error loading analytics: ${e.toString().contains('Exception:') ? e.toString() : 'Network error. Check your internet connection and try again.'}'),
             backgroundColor: AppConstants.errorColor,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _loadAnalytics,
+            ),
           ),
         );
       }
@@ -81,10 +116,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : RefreshIndicator(
+      child: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
                 onRefresh: _loadAnalytics,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),

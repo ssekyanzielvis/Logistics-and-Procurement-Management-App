@@ -13,10 +13,10 @@ class ImageUtils {
       Directory tempDir = await getTemporaryDirectory();
       String tempPath = tempDir.path;
 
-      // Create compressed file path
+      // Create compressed file path with platform-aware path separator
       String fileName =
           'compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      String compressedPath = '$tempPath/$fileName';
+      String compressedPath = '$tempPath${Platform.pathSeparator}$fileName';
 
       // For now, just copy the file (you can add actual compression logic here)
       File compressedFile = File(compressedPath);

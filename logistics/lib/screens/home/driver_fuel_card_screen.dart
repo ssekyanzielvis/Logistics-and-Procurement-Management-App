@@ -28,6 +28,22 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
 
   Future<void> _loadAssignments() async {
     setState(() => _isLoading = true);
+    
+    // Check for empty driver ID
+    if (widget.driverId.isEmpty) {
+      setState(() {
+        _assignments = [];
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No driver ID provided. Please log in again.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    
     try {
       final assignments = await _fuelCardService.getAllAssignments(
         driverId: widget.driverId,
@@ -38,9 +54,12 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error loading assignments: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading assignments: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -58,8 +77,32 @@ class _DriverFuelCardScreenState extends ConsumerState<DriverFuelCardScreen> {
           ),
         ],
       ),
-      body:
-          _isLoading
+      body: widget.driverId.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.account_circle_outlined, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Missing Driver ID',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Please log in again to access your fuel cards',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Go Back'),
+                  ),
+                ],
+              ),
+            )
+          : _isLoading
               ? const Center(child: CircularProgressIndicator())
               : ResponsiveLayout(
                 mobile: _buildMobileLayout(),

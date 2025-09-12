@@ -114,11 +114,71 @@ class AuthService extends ChangeNotifier {
         },
       );
 
-      // The user profile will be automatically created by the database trigger
-      // when a new user is created in auth.users
-      
       if (response.user != null) {
         _role = role ?? 'user';
+        
+        // Handle user profile creation/update using upsert
+        try {
+          await _supabase.from('users').upsert(
+            {
+              'id': response.user!.id,
+              'email': email,
+              'full_name': fullName,
+              'phone': phone,
+              'role': role ?? 'user',
+              'profile_image': profileImage,
+              'updated_at': DateTime.now().toIso8601String(),
+            },
+            onConflict: 'id',
+          );
+          debugPrint('User profile created/updated successfully');
+        } catch (profileError) {
+          debugPrint('Note: User profile creation error: $profileError');
+          // Try alternative approach if upsert fails
+          try {
+            bool userExists = false;
+            try {
+              // Try to get existing user
+              await _supabase
+                  .from('users')
+                  .select()
+                  .eq('id', response.user!.id)
+                  .single();
+              userExists = true;
+            } catch (e) {
+              userExists = false;
+            }
+            
+            if (userExists) {
+              // Update existing user
+              await _supabase
+                  .from('users')
+                  .update({
+                    'email': email,
+                    'full_name': fullName,
+                    'phone': phone,
+                    'role': role ?? 'user',
+                    'profile_image': profileImage,
+                    'updated_at': DateTime.now().toIso8601String(),
+                  })
+                  .eq('id', response.user!.id);
+            } else {
+              // Insert new user
+              await _supabase.from('users').insert({
+                'id': response.user!.id,
+                'email': email,
+                'full_name': fullName,
+                'phone': phone,
+                'role': role ?? 'user',
+                'profile_image': profileImage,
+                'created_at': DateTime.now().toIso8601String(),
+                'updated_at': DateTime.now().toIso8601String(),
+              });
+            }
+          } catch (fallbackError) {
+            debugPrint('Fallback profile creation also failed: $fallbackError');
+          }
+        }
       }
 
       return response;

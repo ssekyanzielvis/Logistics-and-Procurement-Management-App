@@ -123,17 +123,11 @@ class AppThemeData {
 
 final appThemeProvider = Provider<ThemeData>((ref) {
   final settings = ref.watch(settingsProvider);
-  final brightness = ref.watch(platformBrightnessProvider);
-
-  final isDark =
-      settings.themeMode == ThemeMode.dark ||
-      (settings.themeMode == ThemeMode.system && brightness == Brightness.dark);
+  
+  // Use the themeMode from settings to determine theme
+  final isDark = settings.themeMode == ThemeMode.dark;
 
   return isDark
       ? ProfessionalTheme.darkTheme
       : ProfessionalTheme.lightTheme;
-});
-
-final platformBrightnessProvider = Provider<Brightness>((ref) {
-  return WidgetsBinding.instance.platformDispatcher.platformBrightness;
 });

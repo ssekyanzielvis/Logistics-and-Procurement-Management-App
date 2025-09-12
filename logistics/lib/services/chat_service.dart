@@ -5,6 +5,22 @@ import '../models/chat_models.dart';
 
 class ChatService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  
+  // Simple check if chat_rooms table exists
+  Future<bool> _doesChatRoomExist() async {
+    try {
+      // Try to get the structure of the chat_rooms table
+      final tableInfo = await _supabase
+          .from('chat_rooms')
+          .select()
+          .limit(1);
+      print('Chat rooms table exists with structure: ${tableInfo}');
+      return true;
+    } catch (e) {
+      print('Chat rooms table access error: $e');
+      return false;
+    }
+  }
 
   // Get current user ID as string
   String get currentUserId {
@@ -36,41 +52,39 @@ class ChatService {
   // Get or create chat room
   Future<String> getOrCreateChatRoom(String otherUserId) async {
     try {
-      // Ensure user1_id is always the smaller ID for consistency
-      final user1Id =
-          currentUserId.compareTo(otherUserId) < 0
-              ? currentUserId
-              : otherUserId;
-      final user2Id =
-          currentUserId.compareTo(otherUserId) < 0
-              ? otherUserId
-              : currentUserId;
+      // First check if we can access the chat_rooms table
+      final tableExists = await _doesChatRoomExist();
+      if (!tableExists) {
+        throw Exception('Chat rooms functionality is not available. Please contact support.');
+      }
 
-      // Check if chat room already exists
-      final existingRoom =
-          await _supabase
-              .from('chat_rooms')
-              .select('id')
-              .eq('user1_id', user1Id)
-              .eq('user2_id', user2Id)
-              .maybeSingle();
+      // Try to find an existing chat room
+      final existingRoom = await _supabase
+          .from('chat_rooms')
+          .select()
+          .or('and(user1_id.eq.${currentUserId},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${currentUserId})')
+          .maybeSingle();
 
       if (existingRoom != null) {
         return existingRoom['id'];
       }
 
-      // Create new chat room
-      final newRoom =
-          await _supabase
-              .from('chat_rooms')
-              .insert({'user1_id': user1Id, 'user2_id': user2Id})
-              .select('id')
-              .single();
+      // No existing room found, create a new one
+      final result = await _supabase
+          .from('chat_rooms')
+          .insert({
+            'user1_id': currentUserId,
+            'user2_id': otherUserId,
+            'created_at': DateTime.now().toIso8601String(),
+            'last_activity': DateTime.now().toIso8601String(),
+          })
+          .select()
+          .single();
 
-      return newRoom['id'];
+      return result['id'];
     } catch (e) {
-      print('Error creating chat room: $e');
-      throw Exception('Failed to create chat room: $e');
+      print('Error in getOrCreateChatRoom: $e');
+      throw Exception('Unable to access chat room. Please try again later. Error: $e');
     }
   }
 
@@ -168,17 +182,27 @@ class ChatService {
     }
   }
 
-  // Get messages stream
+  // Get messages stream with error handling
   Stream<List<ChatMessage>> getMessages(String chatRoomId) {
     return _supabase
         .from('messages')
         .stream(primaryKey: ['id'])
         .eq('chat_room_id', chatRoomId)
-        .order('timestamp')
-        .map(
-          (data) =>
-              data.map((message) => ChatMessage.fromJson(message)).toList(),
-        );
+        .order('created_at') // Use created_at instead of timestamp
+        .handleError((error) {
+          print('Error in messages stream: $error');
+          return [];
+        })
+        .map((data) {
+          try {
+            return data
+                .map((message) => ChatMessage.fromJson(message))
+                .toList();
+          } catch (e) {
+            print('Error mapping messages: $e');
+            return [];
+          }
+        });
   }
 
   // Send text message
@@ -189,6 +213,18 @@ class ChatService {
     String? replyToId,
   }) async {
     try {
+      // First verify that we have access to this chat room
+      final rooms = await _supabase
+          .from('chat_rooms')
+          .select()
+          .or('user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}')
+          .eq('id', chatRoomId);
+
+      if (rooms.isEmpty) {
+        throw Exception('Chat room not found or access denied');
+      }
+
+      // Then send the message
       final response =
           await _supabase
               .from('messages')
@@ -199,7 +235,8 @@ class ChatService {
                 'message': message,
                 'type': 'text',
                 'reply_to_id': replyToId,
-                'timestamp': DateTime.now().toIso8601String(),
+                'created_at': DateTime.now().toIso8601String(),
+                'is_read': false,
               })
               .select('id')
               .single();
@@ -249,7 +286,7 @@ class ChatService {
                 'message': caption,
                 'image_url': imageUrl,
                 'type': 'image',
-                'timestamp': DateTime.now().toIso8601String(),
+                'created_at': DateTime.now().toIso8601String(),
               })
               .select('id')
               .single();
@@ -382,7 +419,7 @@ class ChatService {
                 'receiver_id': receiverId,
                 'message': emoji,
                 'type': 'emoji',
-                'timestamp': DateTime.now().toIso8601String(),
+                'created_at': DateTime.now().toIso8601String(),
               })
               .select('id')
               .single();

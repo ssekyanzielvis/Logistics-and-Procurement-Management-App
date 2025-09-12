@@ -3,7 +3,7 @@ import 'package:logistics/models/delivery_note.dart';
 import 'package:logistics/services/delivery_note_service.dart';
 
 class DeliveryNotesHistory extends StatefulWidget {
-  final String driverId;
+  final String? driverId;
 
   const DeliveryNotesHistory({super.key, required this.driverId});
 
@@ -24,6 +24,14 @@ class _DeliveryNotesHistoryState extends State<DeliveryNotesHistory> {
 
   Future<void> _loadDeliveryNotes() async {
     try {
+      if (widget.driverId == null || widget.driverId!.isEmpty) {
+        setState(() {
+          _deliveryNotes = [];
+          _isLoading = false;
+        });
+        return;
+      }
+      
       final notes = await _deliveryService.getDeliveryNotes(widget.driverId);
       setState(() {
         _deliveryNotes = notes;
@@ -104,6 +112,25 @@ class _DeliveryNotesHistoryState extends State<DeliveryNotesHistory> {
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
+              : widget.driverId == null || widget.driverId!.isEmpty
+              ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    SizedBox(height: 16),
+                    Text(
+                      'Invalid driver ID',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Please log in again or contact support',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              )
               : _deliveryNotes.isEmpty
               ? const Center(
                 child: Column(

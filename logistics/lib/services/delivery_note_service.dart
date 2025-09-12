@@ -65,8 +65,13 @@ class DeliveryNoteService {
     }
   }
 
-  Future<List<DeliveryNote>> getDeliveryNotes(String driverId) async {
+  Future<List<DeliveryNote>> getDeliveryNotes(String? driverId) async {
     try {
+      // Check if driverId is valid (not null/empty)
+      if (driverId == null || driverId.isEmpty) {
+        return []; // Return empty list instead of making an invalid query
+      }
+      
       final response = await _supabase
           .from('delivery_notes')
           .select()

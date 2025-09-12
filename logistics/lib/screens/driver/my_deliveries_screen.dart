@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logistics/models/consignment.dart';
-import 'package:logistics/services/auth_service.dart';
+import 'package:logistics/providers/auth_provider.dart';
 import 'package:logistics/utils/constants.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class MyDeliveriesScreen extends StatefulWidget {
+class MyDeliveriesScreen extends ConsumerStatefulWidget {
   const MyDeliveriesScreen({super.key});
 
   @override
-  State<MyDeliveriesScreen> createState() => _MyDeliveriesScreenState();
+  ConsumerState<MyDeliveriesScreen> createState() => _MyDeliveriesScreenState();
 }
 
-class _MyDeliveriesScreenState extends State<MyDeliveriesScreen> {
+class _MyDeliveriesScreenState extends ConsumerState<MyDeliveriesScreen> {
   final SupabaseClient _supabase = Supabase.instance.client;
   List<ConsignmentModel> _myDeliveries = [];
   bool _isLoading = true;
@@ -29,11 +29,18 @@ class _MyDeliveriesScreenState extends State<MyDeliveriesScreen> {
         _isLoading = true;
       });
 
-      final user = Provider.of<AuthService>(context, listen: false).currentUser;
+      // Get the auth service from Riverpod instead of Provider
+      final authService = ref.read(authServiceProvider);
+      final user = authService.currentUser;
+      
+      if (user == null) {
+        throw Exception("User not authenticated");
+      }
+      
       final response = await _supabase
           .from('consignments')
           .select()
-          .eq('driver_id', user!.id)
+          .eq('driver_id', user.id)
           .order('created_at', ascending: false);
 
       setState(() {

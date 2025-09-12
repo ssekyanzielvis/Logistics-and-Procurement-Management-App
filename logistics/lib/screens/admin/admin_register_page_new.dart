@@ -25,7 +25,7 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
   final ImagePicker _picker = ImagePicker();
 
   File? _profileImage;
-  String _selectedCountryCode = '+1_34'; // Canada entry (0-based index)
+  String _selectedCountryCode = '+1';
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
@@ -47,11 +47,6 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
-  }
-
-  String _extractPhoneCode(String compoundKey) {
-    // Extract the actual phone code from compound key (e.g., "+1_217" -> "+1")
-    return compoundKey.split('_')[0];
   }
 
   Future<void> _pickImage() async {
@@ -120,7 +115,7 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
         _emailController.text.trim(),
         _passwordController.text.trim(),
         fullName: _nameController.text.trim(),
-        phone: '${_extractPhoneCode(_selectedCountryCode)}${_phoneController.text.trim()}',
+        phone: '$_selectedCountryCode${_phoneController.text.trim()}',
         role: 'admin',
         profileImage: profileImageUrl,
       );
@@ -341,7 +336,6 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
                                     child: DropdownButtonFormField<String>(
                                       value: _selectedCountryCode,
                                       isExpanded: true,
-                                      menuMaxHeight: 300,
                                       decoration: const InputDecoration(
                                         contentPadding: EdgeInsets.symmetric(
                                           horizontal: 12,
@@ -349,27 +343,20 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
                                         border: InputBorder.none,
                                       ),
                                       items: CountryCodes.codes
-                                          .asMap()
-                                          .entries
                                           .map(
-                                            (entry) {
-                                              final index = entry.key;
-                                              final country = entry.value;
-                                              final uniqueKey = '${country['code']}_$index';
-                                              return DropdownMenuItem<String>(
-                                                value: uniqueKey,
-                                                child: Text(
-                                                  '${country['code']} ${country['country']}'
-                                                          .length >
-                                                      15
-                                                      ? '${country['code']}'
-                                                      : '${country['code']} ${country['country']}',
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                  ),
+                                            (country) => DropdownMenuItem<String>(
+                                              value: country['code'],
+                                              child: Text(
+                                                '${country['code']} ${country['country']}'
+                                                        .length >
+                                                    15
+                                                    ? '${country['code']}'
+                                                    : '${country['code']} ${country['country']}',
+                                                style: const TextStyle(
+                                                  fontSize: 14,
                                                 ),
-                                              );
-                                            },
+                                              ),
+                                            ),
                                           )
                                           .toList(),
                                       onChanged: (value) {

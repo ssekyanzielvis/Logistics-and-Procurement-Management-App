@@ -90,7 +90,9 @@ class ChatMessage {
       ),
       isRead: json['is_read'] ?? false,
       replyToId: json['reply_to_id']?.toString(),
-      timestamp: DateTime.parse(json['timestamp']),
+      timestamp: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
       sender: json['sender'] != null ? ChatUser.fromJson(json['sender']) : null,
     );
   }

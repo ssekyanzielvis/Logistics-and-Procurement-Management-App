@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logistics/providers/auth_provider.dart';
 import 'package:logistics/screens/admin/admin_dashboard.dart';
 import 'package:logistics/screens/auth/register_screen.dart';
 import 'package:logistics/screens/client/client_dashboard.dart';
 import 'package:logistics/screens/driver/driver_dashboard.dart';
-import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart';
 import 'package:logistics/utils/supabase_error_handler.dart';
 import 'package:logistics/widgets/rate_limit_helper.dart';
-import 'package:provider/provider.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -33,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final authService = Provider.of<AuthService>(context, listen: false);
+    final authService = ref.read(authServiceProvider);
 
     try {
       final role = await authService.signIn(
@@ -261,8 +261,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 24),
 
                       // Login Button
-                      Consumer<AuthService>(
-                        builder: (context, authService, child) {
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final authService = ref.watch(authServiceProvider);
                           return ElevatedButton(
                             onPressed:
                                 authService.isLoading ? null : _handleLogin,

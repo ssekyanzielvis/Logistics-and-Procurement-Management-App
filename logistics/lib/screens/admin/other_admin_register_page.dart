@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:logistics/services/auth_service.dart';
 import 'package:logistics/utils/constants.dart'; // Added for AppConstants
+import 'package:logistics/utils/country_codes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OtherAdminRegisterPage extends StatefulWidget {
@@ -25,7 +26,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage> {
   final AuthService _authService = AuthService();
 
   File? _profileImage;
-  String _selectedCountryCode = '+1';
+  String _selectedCountryCode = '+1_34'; // Canada entry (0-based index)
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
@@ -48,6 +49,11 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  String _extractPhoneCode(String compoundKey) {
+    // Extract the actual phone code from compound key (e.g., "+1_217" -> "+1")
+    return compoundKey.split('_')[0];
   }
 
   Future<void> _pickImage() async {
@@ -130,7 +136,7 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage> {
         _passwordController.text.trim(),
         fullName:
             '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}',
-        phone: '$_selectedCountryCode${_phoneController.text.trim()}',
+        phone: '${_extractPhoneCode(_selectedCountryCode)}${_phoneController.text.trim()}',
         role: AppConstants.otherAdminRole, // Use constant
         profileImage: profileImageUrl,
       );
@@ -358,25 +364,31 @@ class _OtherAdminRegisterPageState extends State<OtherAdminRegisterPage> {
                                     border: Border.all(color: borderColor),
                                   ),
                                   child: DropdownButtonFormField<String>(
-                                    initialValue: _selectedCountryCode,
+                                    value: _selectedCountryCode,
                                     isExpanded: true,
+                                    menuMaxHeight: 300,
                                     decoration: const InputDecoration(
                                       border: InputBorder.none,
                                       contentPadding: EdgeInsets.zero,
                                     ),
-                                    items:
-                                        ['+1', '+44', '+91', '+86', '+81']
-                                            .map(
-                                              (code) =>
-                                                  DropdownMenuItem<String>(
-                                                    key: Key(
-                                                      'country_code_$code',
-                                                    ),
-                                                    value: code,
-                                                    child: Text(code),
-                                                  ),
-                                            )
-                                            .toList(),
+                                    items: CountryCodes.codes
+                                        .asMap()
+                                        .entries
+                                        .map(
+                                          (entry) {
+                                            final index = entry.key;
+                                            final country = entry.value;
+                                            final uniqueKey = '${country['code']}_$index';
+                                            return DropdownMenuItem<String>(
+                                              value: uniqueKey,
+                                              child: Text(
+                                                '${country['code']} ${country['country']}',
+                                                style: const TextStyle(fontSize: 14),
+                                              ),
+                                            );
+                                          },
+                                        )
+                                        .toList(),
                                     onChanged: (value) {
                                       if (value != null) {
                                         setState(() {

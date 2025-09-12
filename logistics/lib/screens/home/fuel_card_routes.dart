@@ -46,7 +46,9 @@ class FuelCardRoutes {
         return FuelTransactionsScreen(cardId: cardId);
       },
       '/delivery': (context) {
-        return DeliveryScreen(driverId: '');
+        // Get the current user ID from auth provider or pass it as a route parameter
+        final driverId = ModalRoute.of(context)?.settings.arguments as String?;
+        return DeliveryScreen(driverId: driverId ?? '');
       },
       '/fuel-card/assign': (context) => const AssignFuelCardScreen(),
     };

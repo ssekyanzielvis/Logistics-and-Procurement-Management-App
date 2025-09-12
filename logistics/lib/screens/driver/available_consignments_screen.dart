@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logistics/models/consignment.dart';
-import 'package:logistics/services/auth_service.dart';
+import 'package:logistics/providers/auth_provider.dart';
 import 'package:logistics/utils/constants.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AvailableConsignmentsScreen extends StatefulWidget {
+class AvailableConsignmentsScreen extends ConsumerStatefulWidget {
   const AvailableConsignmentsScreen({super.key});
 
   @override
-  State<AvailableConsignmentsScreen> createState() =>
+  ConsumerState<AvailableConsignmentsScreen> createState() =>
       _AvailableConsignmentsScreenState();
 }
 
 class _AvailableConsignmentsScreenState
-    extends State<AvailableConsignmentsScreen> {
+    extends ConsumerState<AvailableConsignmentsScreen> {
   final SupabaseClient _supabase = Supabase.instance.client;
   List<ConsignmentModel> _availableConsignments = [];
   bool _isLoading = true;
@@ -63,12 +63,17 @@ class _AvailableConsignmentsScreenState
 
   Future<void> _acceptConsignment(ConsignmentModel consignment) async {
     try {
-      final user = Provider.of<AuthService>(context, listen: false).currentUser;
+      final authService = ref.read(authServiceProvider);
+      final user = authService.currentUser;
+      
+      if (user == null) {
+        throw Exception('You must be logged in to accept consignments');
+      }
 
       await _supabase
           .from('consignments')
           .update({
-            'driver_id': user!.id,
+            'driver_id': user.id,
             'status': 'assigned',
             'updated_at': DateTime.now().toIso8601String(),
           })

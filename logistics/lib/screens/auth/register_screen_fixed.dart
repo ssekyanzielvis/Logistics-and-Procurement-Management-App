@@ -324,7 +324,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               child: DropdownButtonFormField<String>(
                                 value: _selectedCountryCode,
                                 isExpanded: true,
-                                menuMaxHeight: 300,
                                 decoration: const InputDecoration(
                                   contentPadding: EdgeInsets.symmetric(horizontal: 12),
                                   border: InputBorder.none,

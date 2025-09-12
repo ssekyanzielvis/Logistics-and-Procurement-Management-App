@@ -267,13 +267,17 @@ class DriverHomeScreen extends ConsumerWidget {
                   'Fuel Cards',
                   Icons.credit_card,
                   Colors.teal,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (context) => const DriverFuelCardScreen(driverId: ''),
-                    ),
-                  ),
+                  () {
+                    // Get the current user ID from auth
+                    final user = Supabase.instance.client.auth.currentUser;
+                    final driverId = user?.id ?? '';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DriverFuelCardScreen(driverId: driverId),
+                      ),
+                    );
+                  },
                   iconSize,
                   titleFontSize,
                   cardPadding,
@@ -283,12 +287,17 @@ class DriverHomeScreen extends ConsumerWidget {
                   'Start Delivery',
                   Icons.directions_car,
                   Colors.red,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DeliveryScreen(driverId: ''),
-                    ),
-                  ),
+                  () {
+                    // Get the current user ID from auth
+                    final user = Supabase.instance.client.auth.currentUser;
+                    final driverId = user?.id ?? '';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DeliveryScreen(driverId: driverId),
+                      ),
+                    );
+                  },
                   iconSize,
                   titleFontSize,
                   cardPadding,

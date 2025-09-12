@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logistics/models/consignment.dart';
-import 'package:logistics/services/auth_service.dart';
+import 'package:logistics/providers/auth_provider.dart';
 import 'package:logistics/utils/constants.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class MyConsignmentsScreen extends StatefulWidget {
+class MyConsignmentsScreen extends ConsumerStatefulWidget {
   const MyConsignmentsScreen({super.key});
 
   @override
-  State<MyConsignmentsScreen> createState() => _MyConsignmentsScreenState();
+  ConsumerState<MyConsignmentsScreen> createState() => _MyConsignmentsScreenState();
 }
 
-class _MyConsignmentsScreenState extends State<MyConsignmentsScreen> {
+class _MyConsignmentsScreenState extends ConsumerState<MyConsignmentsScreen> {
   final SupabaseClient _supabase = Supabase.instance.client;
   List<ConsignmentModel> _consignments = [];
   bool _isLoading = true;
@@ -30,11 +30,17 @@ class _MyConsignmentsScreenState extends State<MyConsignmentsScreen> {
         _isLoading = true;
       });
 
-      final user = Provider.of<AuthService>(context, listen: false).currentUser;
+      final authService = ref.read(authServiceProvider);
+      final user = authService.currentUser;
+      
+      if (user == null) {
+        throw Exception("User not authenticated");
+      }
+      
       var query = _supabase
           .from('consignments')
           .select()
-          .eq('client_id', user!.id);
+          .eq('client_id', user.id);
 
       if (_selectedFilter != 'all') {
         query = query.eq('status', _selectedFilter);
