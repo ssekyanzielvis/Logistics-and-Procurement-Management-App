@@ -158,9 +158,7 @@ class _AdminLoginPageState extends State<AdminLoginPage>
     }
   }
 
-  void _handleRegister() {
-    Navigator.pushNamed(context, '/admin-register');
-  }
+  // _handleRegister removed per request
 
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) {
@@ -234,9 +232,9 @@ class _AdminLoginPageState extends State<AdminLoginPage>
                           const SizedBox(height: 24),
                           _buildForgotPassword(),
                           const SizedBox(height: 16),
-                          _buildRegisterLink(),
+                          // _buildRegisterLink() removed per request
                           const SizedBox(height: 32),
-                          _buildFooter(),
+                          // _buildFooter() removed per request
                         ],
                       ),
                     ),
@@ -294,9 +292,9 @@ class _AdminLoginPageState extends State<AdminLoginPage>
       child: Column(
         children: [
           _buildEmailField(),
-          const SizedBox(height: 20),
-          _buildPasswordField(),
           const SizedBox(height: 16),
+          _buildPasswordField(),
+          const SizedBox(height: 8),
           _buildRememberMe(),
         ],
       ),
@@ -473,39 +471,5 @@ class _AdminLoginPageState extends State<AdminLoginPage>
     );
   }
 
-  Widget _buildRegisterLink() {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: TextButton(
-        onPressed: _handleRegister,
-        child: const Text(
-          "Don't have an Account? Register",
-          style: TextStyle(
-            color: Color(0xFF667EEA),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
-    );
+    // _buildRegisterLink removed per request
   }
-
-  Widget _buildFooter() {
-    return Column(
-      children: [
-        Divider(color: Colors.grey[300]),
-        const SizedBox(height: 16),
-        Text(
-          'Need access? Contact your system administrator',
-          style: TextStyle(color: Colors.grey[600], fontSize: 14),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '© 2024 Admin Portal. All rights reserved.',
-          style: TextStyle(color: Colors.grey[500], fontSize: 12),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-}

@@ -331,7 +331,7 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
                               Row(
                                 children: [
                                   Container(
-                                    width: 120,
+                                    width: 100,
                                     margin: const EdgeInsets.only(right: 8),
                                     decoration: BoxDecoration(
                                       color: Colors.grey[50],
@@ -341,11 +341,11 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
                                     child: DropdownButtonFormField<String>(
                                       value: _selectedCountryCode,
                                       isExpanded: true,
+                                      isDense: true,
+                                      iconSize: 20,
                                       menuMaxHeight: 300,
                                       decoration: const InputDecoration(
-                                        contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                        ),
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 8),
                                         border: InputBorder.none,
                                       ),
                                       items: CountryCodes.codes
@@ -358,20 +358,41 @@ class _AdminRegisterPageState extends State<AdminRegisterPage> {
                                               final uniqueKey = '${country['code']}_$index';
                                               return DropdownMenuItem<String>(
                                                 value: uniqueKey,
-                                                child: Text(
-                                                  '${country['code']} ${country['country']}'
-                                                          .length >
-                                                      15
-                                                      ? '${country['code']}'
-                                                      : '${country['code']} ${country['country']}',
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                  ),
+                                                child: Row(
+                                                  children: [
+                                                    Text(
+                                                      '${country['code']} ',
+                                                      style: const TextStyle(fontSize: 14),
+                                                    ),
+                                                    Expanded(
+                                                      child: Text(
+                                                        country['country'] ?? '',
+                                                        overflow: TextOverflow.ellipsis,
+                                                        style: const TextStyle(fontSize: 14, color: Colors.black87),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               );
                                             },
                                           )
                                           .toList(),
+                                      selectedItemBuilder: (context) {
+                                        return CountryCodes.codes
+                                            .asMap()
+                                            .entries
+                                            .map((entry) {
+                                          final country = entry.value;
+                                          return Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              country['code'] ?? '',
+                                              style: const TextStyle(fontSize: 14),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          );
+                                        }).toList();
+                                      },
                                       onChanged: (value) {
                                         if (value != null) {
                                           setState(() {

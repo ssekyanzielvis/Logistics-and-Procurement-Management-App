@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
+import 'package:logistics/screens/admin/admin_login_page.dart';
+import 'package:logistics/screens/admin/other_admin_login_page.dart';
+import 'package:logistics/screens/home/client_login_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,25 +11,23 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
-  int? hoveredIndex;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+  late final AnimationController _animationController;
+  late final Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    // Initialize timezone database
-    tz.initializeTimeZones();
-
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 700),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
     );
     _animationController.forward();
   }
+
 
   @override
   void dispose() {
@@ -44,368 +43,230 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF8F9FA), Color(0xFFE9ECEF)],
+            colors: [Color(0xFFF2F6FF), Color(0xFFEFF4F9)],
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: _buildMainContent(),
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 920),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 8),
+                      Text(
+                        'Select your access level to continue',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1F2937),
+                            ) ??
+                            const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1F2937),
+                            ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      _buildAccessCard(
+                        title: 'ADMIN LOGIN',
+                        description:
+                            'Full system access and administrative privileges',
+                        icon: Icons.verified_user_outlined,
+                        iconColor: const Color(0xFF4C6FFF),
+                        iconBg: const Color(0xFFE9EDFF),
+                        badgeText: 'Full Access',
+                        badgeBg: const Color(0xFFE9EDFF),
+                        badgeFg: const Color(0xFF4C6FFF),
+                        onTap: () => _handleRoleSelection('Admin'),
+                      ),
+
+                      _buildAccessCard(
+                        title: 'CLIENT/DRIVER LOGIN',
+                        description:
+                            'Access for clients and drivers to manage assignments',
+                        icon: Icons.groups_outlined,
+                        iconColor: const Color(0xFF16A34A),
+                        iconBg: const Color(0xFFE9FCEB),
+                        badgeText: 'User Access',
+                        badgeBg: const Color(0xFFE9FCEB),
+                        badgeFg: const Color(0xFF16A34A),
+                        onTap: () => _handleRoleSelection('Client/Driver'),
+                      ),
+
+                      _buildAccessCard(
+                        title: 'OTHER ADMIN LOGIN',
+                        description:
+                            'Department heads and supervisors with limited permissions',
+                        icon: Icons.apartment_outlined,
+                        iconColor: const Color(0xFFF59E0B),
+                        iconBg: const Color(0xFFFFF4E5),
+                        badgeText: 'Limited Access',
+                        badgeBg: const Color(0xFFFFF4E5),
+                        badgeFg: const Color(0xFFD97706),
+                        onTap: () => _handleRoleSelection('Other Admin'),
+                      ),
+
+                      const SizedBox(height: 12),
+                    ],
                   ),
                 ),
               ),
-              _buildFooter(),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF007BFF),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.apps, color: Colors.white, size: 24),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'LOGISTICS',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF343A40),
-                ),
-              ),
-            ],
-          ),
-          TextButton(
-            onPressed: () {},
-            child: const Text(
-              'HOME',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF007BFF),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  void _handleRoleSelection(String role) {
+    switch (role) {
+      case 'Admin':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const AdminLoginPage()),
+        );
+        break;
+      case 'Client/Driver':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
+        break;
+      case 'Other Admin':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const OtherAdminLoginPage()),
+        );
+        break;
+    }
   }
 
-  Widget _buildMainContent() {
-  final size = MediaQuery.of(context).size;
-  final isCompactHeight = size.height < 700;
-
-  return Container(
-      constraints: const BoxConstraints(maxWidth: 1000),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 0.15),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(
-                parent: _animationController,
-                curve: Curves.easeInOut,
-              ),
-            ),
-            child: Text(
-              '${getGreeting(userName: null)}',
-              style: TextStyle(
-                fontSize: isCompactHeight ? 24 : 28,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF343A40),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Select your role to continue',
-            style: TextStyle(
-              fontSize: isCompactHeight ? 14 : 16,
-              color: const Color(0xFF6C757D),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: isCompactHeight ? 16 : 24),
-          _buildRoleGrid(),
-          const SizedBox(height: 12),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRoleGrid() {
+  Widget _buildAccessCard({
+    required String title,
+    required String description,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String badgeText,
+    required Color badgeBg,
+    required Color badgeFg,
+    required VoidCallback onTap,
+  }) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        // Responsive columns to keep all choices visible and compact
-        int crossAxisCount;
-        if (width >= 900) {
-          crossAxisCount = 3; // desktop/tablets
-        } else if (width >= 600) {
-          crossAxisCount = 3; // large phones/small tablets
-        } else if (width >= 360) {
-          crossAxisCount = 2; // most phones
-        } else {
-          crossAxisCount = 1; // very narrow screens
-        }
+        final w = constraints.maxWidth;
+        final iconBox = w < 360 ? 40.0 : 48.0;
+        final titleSize = w < 360 ? 16.0 : 18.0;
+        final descSize = w < 360 ? 12.0 : 14.0;
+        final padding = w < 360 ? 12.0 : 16.0;
 
-        return GridView.count(
-          crossAxisCount: crossAxisCount,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.5, // shorter tiles to fit above the fold
-          children: [
-            _buildRoleTile(
-              index: 0,
-              title: 'Admin',
-              icon: Icons.admin_panel_settings,
-              description: 'Manage the entire system',
-              color: const Color(0xFF007BFF),
+        return Semantics(
+          button: true,
+          label: title,
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0A000000), // subtle shadow without withOpacity
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
-            _buildRoleTile(
-              index: 1,
-              title: 'Client/Driver',
-              icon: Icons.person,
-              description: 'Client and driver features',
-              color: const Color(0xFF28A745),
-            ),
-            _buildRoleTile(
-              index: 2,
-              title: 'Other Admin',
-              icon: Icons.settings_accessibility,
-              description: 'Limited admin access',
-              color: const Color(0xFF6F42C1),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildRoleTile({
-    required int index,
-    required String title,
-    required IconData icon,
-    required String description,
-    required Color color,
-  }) {
-    final isHovered = hoveredIndex == index;
-    return Semantics(
-      button: true,
-      label: '$title role',
-      child: MouseRegion(
-        onEnter: (_) => setState(() => hoveredIndex = index),
-        onExit: (_) => setState(() => hoveredIndex = null),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          transform: Matrix4.identity()..scale(isHovered ? 1.03 : 1.0),
-          child: Material(
-            elevation: isHovered ? 6 : 2,
-            borderRadius: BorderRadius.circular(14),
-            color: Colors.white,
             child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () => _handleRoleSelection(title),
+              borderRadius: BorderRadius.circular(16),
+              onTap: onTap,
               child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                padding: EdgeInsets.all(padding),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
-                      width: 56,
-                      height: 56,
+                      width: iconBox,
+                      height: iconBox,
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(28),
+                        color: iconBg,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(icon, size: 28, color: color),
+                      child: Icon(icon, color: iconColor, size: iconBox * 0.5),
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF343A40),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: titleSize,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF111827),
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: descSize,
+                              color: const Color(0xFF6B7280),
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6C757D),
+                    const SizedBox(width: 12),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 60),
+                      child: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        alignment: WrapAlignment.end,
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: badgeBg,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              badgeText,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: badgeFg,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded,
+                              color: Color(0xFF9CA3AF)),
+                        ],
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  // Removed old _buildRoleCard in favor of compact grid tiles
-
-  Widget _buildFooter() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          TextButton.icon(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text('Help'),
-                      content: const Text(
-                        'Select your role to access the appropriate login page. '
-                        'Admins will get full access, while clients/drivers will '
-                        'have limited access based on their permissions.',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('OK'),
-                        ),
-                      ],
-                    ),
-              );
-            },
-            icon: const Icon(
-              Icons.help_outline,
-              size: 16,
-              color: Color(0xFF6C757D),
-            ),
-            label: const Text(
-              'Need help?',
-              style: TextStyle(fontSize: 14, color: Color(0xFF6C757D)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _handleRoleSelection(String role) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF007BFF)),
-                ),
-                const SizedBox(height: 16),
-                Text('Preparing $role login...'),
-              ],
-            ),
-          ),
-    );
-
-    Future.delayed(const Duration(seconds: 1), () {
-      if (!mounted) return;
-
-      Navigator.of(context).pop();
-
-      switch (role) {
-        case 'Admin':
-          Navigator.pushNamed(context, '/admin-login');
-          break;
-        case 'Client/Driver':
-          Navigator.pushNamed(context, '/login');
-          break;
-        case 'Other Admin':
-          Navigator.pushNamed(context, '/other-admin-login');
-          break;
-        default:
-          Navigator.pushNamed(context, '/');
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Redirecting to $role login'),
-            backgroundColor: const Color(0xFF28A745),
-            duration: const Duration(seconds: 2),
-          ),
         );
-      }
-    });
-  }
-
-  String getGreeting({String? userName}) {
-    try {
-      final location = tz.getLocation('Africa/Nairobi');
-      final now = tz.TZDateTime.now(location);
-      final hour = now.hour;
-      String greeting;
-      if (hour < 12) {
-        greeting = 'Good Morning';
-      } else if (hour < 17) {
-        greeting = 'Good Afternoon';
-      } else if (hour < 20) {
-        greeting = 'Good Evening';
-      } else {
-        greeting = 'Good Night';
-      }
-      return userName != null ? '$greeting, $userName' : greeting;
-    } catch (e) {
-      // Fallback to local time if timezone fails
-      final hour = DateTime.now().hour;
-      String greeting;
-      if (hour < 12) {
-        greeting = 'Good Morning';
-      } else if (hour < 17) {
-        greeting = 'Good Afternoon';
-      } else if (hour < 20) {
-        greeting = 'Good Evening';
-      } else {
-        greeting = 'Good Night';
-      }
-      return userName != null ? '$greeting, $userName' : greeting;
-    }
+      },
+    );
   }
 }
