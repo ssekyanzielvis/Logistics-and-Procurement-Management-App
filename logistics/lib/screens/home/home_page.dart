@@ -112,15 +112,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildMainContent() {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 800),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+  final size = MediaQuery.of(context).size;
+  final isCompactHeight = size.height < 700;
+
+  return Container(
+      constraints: const BoxConstraints(maxWidth: 1000),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SlideTransition(
             position: Tween<Offset>(
-              begin: const Offset(0, 0.2),
+              begin: const Offset(0, 0.15),
               end: Offset.zero,
             ).animate(
               CurvedAnimation(
@@ -129,186 +133,144 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ),
             child: Text(
-              '${getGreeting(userName: null)} ',
-              style: const TextStyle(
-                fontSize: 32,
+              '${getGreeting(userName: null)}',
+              style: TextStyle(
+                fontSize: isCompactHeight ? 24 : 28,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF343A40),
+                color: const Color(0xFF343A40),
               ),
               textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(height: 12),
-          const Text(
-            'Select your role to access the appropriate dashboard',
-            style: TextStyle(fontSize: 16, color: Color(0xFF6C757D)),
+          const SizedBox(height: 8),
+          Text(
+            'Select your role to continue',
+            style: TextStyle(
+              fontSize: isCompactHeight ? 14 : 16,
+              color: const Color(0xFF6C757D),
+            ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 48),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth > 768) {
-                return _buildDesktopLayout();
-              } else {
-                return _buildMobileLayout();
-              }
-            },
-          ),
-          const SizedBox(height: 24),
+          SizedBox(height: isCompactHeight ? 16 : 24),
+          _buildRoleGrid(),
+          const SizedBox(height: 12),
         ],
       ),
     );
   }
 
-  Widget _buildDesktopLayout() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        Expanded(
-          child: _buildRoleCard(
-            0,
-            'Admin',
-            Icons.admin_panel_settings,
-            'Full system administration access',
-            const Color(0xFF007BFF),
-          ),
-        ),
-        const SizedBox(width: 24),
-        Expanded(
-          child: _buildRoleCard(
-            1,
-            'Client/Driver',
-            Icons.person,
-            'Access client or driver features',
-            const Color(0xFF28A745),
-          ),
-        ),
-        const SizedBox(width: 24),
-        Expanded(
-          child: _buildRoleCard(
-            2,
-            'Other Admin',
-            Icons.settings_accessibility,
-            'Limited admin access',
-            const Color(0xFF6F42C1),
-          ),
-        ),
-      ],
+  Widget _buildRoleGrid() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        // Responsive columns to keep all choices visible and compact
+        int crossAxisCount;
+        if (width >= 900) {
+          crossAxisCount = 3; // desktop/tablets
+        } else if (width >= 600) {
+          crossAxisCount = 3; // large phones/small tablets
+        } else if (width >= 360) {
+          crossAxisCount = 2; // most phones
+        } else {
+          crossAxisCount = 1; // very narrow screens
+        }
+
+        return GridView.count(
+          crossAxisCount: crossAxisCount,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.5, // shorter tiles to fit above the fold
+          children: [
+            _buildRoleTile(
+              index: 0,
+              title: 'Admin',
+              icon: Icons.admin_panel_settings,
+              description: 'Manage the entire system',
+              color: const Color(0xFF007BFF),
+            ),
+            _buildRoleTile(
+              index: 1,
+              title: 'Client/Driver',
+              icon: Icons.person,
+              description: 'Client and driver features',
+              color: const Color(0xFF28A745),
+            ),
+            _buildRoleTile(
+              index: 2,
+              title: 'Other Admin',
+              icon: Icons.settings_accessibility,
+              description: 'Limited admin access',
+              color: const Color(0xFF6F42C1),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildMobileLayout() {
-    return Column(
-      children: [
-        _buildRoleCard(
-          0,
-          'Admin',
-          Icons.admin_panel_settings,
-          'Full system administration access',
-          const Color(0xFF007BFF),
-        ),
-        const SizedBox(height: 16),
-        _buildRoleCard(
-          1,
-          'Client/Driver',
-          Icons.person,
-          'Access client or driver features',
-          const Color(0xFF28A745),
-        ),
-        const SizedBox(height: 16),
-        _buildRoleCard(
-          2,
-          'Other Admin',
-          Icons.settings_accessibility,
-          'Limited admin access',
-          const Color(0xFF6F42C1),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRoleCard(
-    int index,
-    String title,
-    IconData icon,
-    String description,
-    Color color,
-  ) {
+  Widget _buildRoleTile({
+    required int index,
+    required String title,
+    required IconData icon,
+    required String description,
+    required Color color,
+  }) {
     final isHovered = hoveredIndex == index;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => hoveredIndex = index),
-      onExit: (_) => setState(() => hoveredIndex = null),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        transform: Matrix4.identity()..scale(isHovered ? 1.05 : 1.0),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 200),
+    return Semantics(
+      button: true,
+      label: '$title role',
+      child: MouseRegion(
+        onEnter: (_) => setState(() => hoveredIndex = index),
+        onExit: (_) => setState(() => hoveredIndex = null),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          transform: Matrix4.identity()..scale(isHovered ? 1.03 : 1.0),
           child: Material(
-            elevation: isHovered ? 8 : 4,
-            borderRadius: BorderRadius.circular(16),
+            elevation: isHovered ? 6 : 2,
+            borderRadius: BorderRadius.circular(14),
+            color: Colors.white,
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               onTap: () => _handleRoleSelection(title),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Colors.white,
-                  border: Border.all(
-                    color: isHovered ? color : Colors.transparent,
-                    width: 2,
-                  ),
-                ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
-                      width: 64,
-                      height: 64,
+                      width: 56,
+                      height: 56,
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(32),
+                        borderRadius: BorderRadius.circular(28),
                       ),
-                      child: Icon(icon, size: 32, color: color),
+                      child: Icon(icon, size: 28, color: color),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
                         color: Color(0xFF343A40),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     Text(
                       description,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 12,
                         color: Color(0xFF6C757D),
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isHovered ? color : color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Select',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isHovered ? Colors.white : color,
-                        ),
-                      ),
                     ),
                   ],
                 ),
@@ -319,6 +281,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       ),
     );
   }
+
+  // Removed old _buildRoleCard in favor of compact grid tiles
 
   Widget _buildFooter() {
     return Container(
